@@ -1,0 +1,48 @@
+[package]
+name = "kraken_collector"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "test-grpc"
+path = "test-tools/grpc_server.rs"
+
+[[bin]]
+name = "test-mqtt"
+path = "test-tools/mqtt_client.rs"
+
+[[bin]]
+name = "test-mqtt-broker"
+path = "test-tools/mqtt_broker.rs"
+
+[[bin]]
+name = "test-websocket"
+path = "test-tools/websocket_client.rs"
+
+[[bin]]
+name = "test-websocket-server"
+path = "test-tools/websocket_server.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+
+[dependencies]
+log = "0.4.17"
+env_logger = "0.10.0"
+tonic = "0.8.3"
+hyper = "0.14.25"
+anyhow = "1.0.70"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+prost = "0.11.8"
+confy = "0.5.1"
+rumqttd = "0.13.0"
+rumqttc = "0.20.0"
+serde = { version = "1.0.157", features = ["derive"] }
+serde_json = "1.0.94"
+websocket = "0.26.5"
+
+[build-dependencies]
+tonic-build = { version = "0.8.4", features = ["prost"]}

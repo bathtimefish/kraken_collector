@@ -1,0 +1,20 @@
+syntax = "proto3";
+package kraken; 
+
+// The Kraken message service definition.
+service KrakenMessage {
+  // Sends a message 
+  rpc Send (KrakenMessageRequest) returns (KrakenMessageResponse) {}
+}
+
+// The request message containing the data which Kraken needed.
+message KrakenMessageRequest {
+  string kind = 1;        // The message type which have been defined by Kraken
+  string provider = 2;    // The name of the provider which sent the data from
+  string payload = 3;     // Payload of the data from service(s)
+}
+
+// The response message containing the number of status 
+message KrakenMessageResponse {
+  int32 status = 1;       // The status number which have been defined by Kraken
+}
