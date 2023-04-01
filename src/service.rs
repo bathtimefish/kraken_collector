@@ -9,11 +9,11 @@ use crate::{
     config::CollectorConfig
 };
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main(flavor = "multi_thread", worker_threads = 3)]
 pub async fn start(config: CollectorConfig) {
-    let webhook = Webhook{ config: config.clone() };
-    let mqtt = Mqtt{ config: config.clone() };
-    let websocket = Websocket{ config: config.clone() };
+    let webhook = Box::new(Webhook{ config: config.clone() });
+    let mqtt = Box::new(Mqtt{ config: config.clone() });
+    let websocket = Box::new(Websocket{ config: config.clone() });
 
     thread::spawn(move || {
         let started = webhook.start();

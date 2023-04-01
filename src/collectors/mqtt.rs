@@ -1,5 +1,4 @@
 use rumqttd::{Broker, Config, Notification};
-use std::thread;
 
 pub struct Mqtt {
     pub config: CollectorConfig,
@@ -23,7 +22,7 @@ impl Collector for Mqtt {
         let listening_host = &mqtt_config.v4.get("1").unwrap().listen.to_owned();
         let mut broker = Broker::new(mqtt_config);
         let (mut tx, mut rx) = broker.link("kraken").unwrap();
-        thread::spawn(move || {
+        tokio::spawn(async move {
             match broker.start() {
                 Ok(_) => debug!("MQTT Broker was started."),
                 Err(e) => error!("Failed to start MQTT Broker: {}", e),
