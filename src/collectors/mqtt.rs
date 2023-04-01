@@ -1,21 +1,27 @@
 use rumqttd::{Broker, Config, Notification};
 use std::thread;
 
-pub(crate) struct Mqtt;
+pub struct Mqtt {
+    pub config: CollectorConfig,
+}
+
+use crate::config::CollectorConfig;
 
 use super::Collector;
 use super::grpc;
 
 impl Collector for Mqtt {
-    fn new() -> Self {
-        Mqtt {}
+    fn name(&self) -> &str {
+        "mqtt"
     }
-
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
-        let config: Config = confy::load_path("config/mqttd.conf").unwrap();
-        let listening_host = &config.v4.get("1").unwrap().listen.to_owned();
-        let mut broker = Broker::new(config);
+        let mut mqtt_config: Config = confy::load_path("config/mqttd.conf").unwrap();
+        let mut server_settings = mqtt_config.v4.get("1").unwrap().clone();
+        server_settings.listen = self.config.mqtt.host.parse().unwrap();
+        mqtt_config.v4.insert("1".to_string(), server_settings.to_owned());
+        let listening_host = &mqtt_config.v4.get("1").unwrap().listen.to_owned();
+        let mut broker = Broker::new(mqtt_config);
         let (mut tx, mut rx) = broker.link("kraken").unwrap();
         thread::spawn(move || {
             match broker.start() {
@@ -23,7 +29,7 @@ impl Collector for Mqtt {
                 Err(e) => error!("Failed to start MQTT Broker: {}", e),
             }
         });
-        tx.subscribe("kraken").unwrap();
+        tx.subscribe(&self.config.mqtt.topic).unwrap();
         debug!("MQTT Broker was started that is listening on {}", listening_host.to_string());
         loop {
             let notification = match rx.recv().unwrap() {

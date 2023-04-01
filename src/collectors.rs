@@ -1,5 +1,6 @@
+
 pub trait Collector {
-    fn new() -> Self;
+    fn name(&self) -> &str;
     fn start(&self) -> Result<(), anyhow::Error>;
 }
 

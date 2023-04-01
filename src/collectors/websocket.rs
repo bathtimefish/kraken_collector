@@ -3,41 +3,57 @@ use std::thread;
 use websocket::sync::Server;
 use websocket::OwnedMessage;
 
+use crate::config::CollectorConfig;
+
 use super::Collector;
 use super::grpc;
 
-pub(crate) struct Websocket;
+pub struct Websocket {
+    pub config: CollectorConfig,
+}
 
-const HOST_ADDR: &'static str = "127.0.0.1:2794";
 const SUB_PROTOCOL: &'static str = "kraken-ws";
 
 impl Collector for Websocket {
-    fn new() -> Self {
-        Websocket {}
+    fn name(&self) -> &str {
+        "websocket"
     }
-
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
-        let server = Server::bind(HOST_ADDR).unwrap();
+        let host = self.config.websocket.host.clone();
+        // let sub_protocol = self.config.websocket.sub_protocol.clone(); <-- うまくいかない
+        let server = Server::bind(host.clone()).unwrap();
+        debug!("Websocket server was started that is listening on ws://{}", &host);
 
         for request in server.filter_map(Result::ok) {
             // Spawn a new thread for each connection.
             // !!!! thread::spawn(move || async {  <- asyncを入れると動作しない
             thread::spawn(move || {
-                let mut client = request.use_protocol(SUB_PROTOCOL).accept().unwrap();
+                let sub_protocol = SUB_PROTOCOL;
+                let mut client = request.use_protocol(sub_protocol).accept().unwrap();
                 let ip = client.peer_addr().unwrap();
-                println!("Connection from {}", ip);
+                debug!("Connection from {}", ip);
                 let message = OwnedMessage::Text("{\"kraken\": \"hello\"}".to_string());
                 client.send_message(&message).unwrap();
                 let (mut receiver, mut sender) = client.split().unwrap();
                 for message in receiver.incoming_messages() {
-                    let message = message.unwrap();
+                    let message = message.unwrap_or_else(|e| {
+                        match e {
+                            websocket::WebSocketError::NoDataAvailable => {
+                                OwnedMessage::Close(None)
+                            }
+                            _ => {
+                                debug!("Error: {:?}", e);
+                                OwnedMessage::Close(None)
+                            }
+                        }
+                    });
 
                     match message {
                         OwnedMessage::Close(_) => {
                             let message = OwnedMessage::Close(None);
                             sender.send_message(&message).unwrap();
-                            println!("Client {} disconnected", ip);
+                            debug!("Client {} disconnected", ip);
                             return;
                         }
                         OwnedMessage::Ping(ping) => {

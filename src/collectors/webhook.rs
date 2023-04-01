@@ -4,6 +4,8 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::result::Result;
 
+use crate::config::CollectorConfig;
+
 use super::Collector;
 use super::grpc;
 
@@ -33,16 +35,18 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>, anyhow::Er
     }
 }
 
-pub(crate) struct Webhook;
+pub struct Webhook {
+    pub config: CollectorConfig,
+}
 
 impl Collector for Webhook {
-    fn new() -> Self {
-        Webhook {}
+    fn name(&self) -> &str {
+        "webhook"
     }
-
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
-        let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+        let port = self.config.webhook.port;
+        let addr = SocketAddr::from(([0, 0, 0, 0], port));
         let make_svc = make_service_fn(|_| {
             async move {
                 Ok::<_, Infallible>(service_fn(move |req| {

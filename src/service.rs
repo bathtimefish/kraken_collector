@@ -1,14 +1,21 @@
 use std::thread;
-use crate::collectors::{
-    Collector,
-    webhook::Webhook,
-    mqtt::Mqtt,
-    websocket::Websocket,
+use crate::{
+    collectors::{
+        Collector,
+        webhook::Webhook,
+        mqtt::Mqtt,
+        websocket::Websocket,
+    },
+    config::CollectorConfig
 };
 
-pub fn start() {
+#[tokio::main(flavor = "current_thread")]
+pub async fn start(config: CollectorConfig) {
+    let webhook = Webhook{ config: config.clone() };
+    let mqtt = Mqtt{ config: config.clone() };
+    let websocket = Websocket{ config: config.clone() };
+
     thread::spawn(move || {
-        let webhook: Webhook = Collector::new();
         let started = webhook.start();
         match started {
             Ok(_) => debug!("Webhook collector started."),
@@ -16,7 +23,6 @@ pub fn start() {
         }
     });
     thread::spawn(move || {
-        let mqtt: Mqtt = Collector::new();
         let started = mqtt.start();
         match started {
             Ok(_) => debug!("MQTT collector started."),
@@ -24,7 +30,6 @@ pub fn start() {
         }
     });
     thread::spawn(move || {
-        let websocket: Websocket = Collector::new();
         let started = websocket.start();
         match started {
             Ok(_) => debug!("Websocket collector started."),
