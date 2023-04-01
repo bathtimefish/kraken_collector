@@ -21,7 +21,7 @@ impl Collector for Websocket {
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
         let host = self.config.websocket.host.clone();
-        // let sub_protocol = self.config.websocket.sub_protocol.clone(); <-- うまくいかない
+        // let sub_protocol = self.config.websocket.sub_protocol.clone(); // <-- うまくいかない
         let server = Server::bind(host.clone()).unwrap();
         debug!("Websocket server was started that is listening on ws://{}", &host);
 
