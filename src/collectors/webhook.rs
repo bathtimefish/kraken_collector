@@ -12,10 +12,10 @@ use super::grpc;
 async fn post_webhook(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let body_bytes = hyper::body::to_bytes(req.into_body()).await;
     let body = String::from_utf8(body_bytes.unwrap().to_vec()).unwrap();
-    info!("POST /webhook: {}", &body);
+    debug!("POST /webhook: {}", &body);
     let sent = grpc::send(&body.as_str(), &"webhook").await;
     match sent {
-        Ok(msg) => info!("Sent message to grpc server: {:?}", msg),
+        Ok(msg) => debug!("Sent message to grpc server: {:?}", msg),
         Err(msg) => error!("Failed to send to grpc: {:?}", msg),
     }
     let mut response = Response::new(Body::from("{ \"status\": \"POST_OK\"}"));

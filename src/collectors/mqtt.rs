@@ -37,7 +37,7 @@ impl Collector for Mqtt {
         let listening_host = &mqtt_config.v4.get("1").unwrap().listen.to_owned();
         let mut broker = Broker::new(mqtt_config);
         let (mut tx, mut rx) = broker.link("kraken").unwrap();
-        tokio::spawn(async move {
+        std::thread::spawn(move || {
             match broker.start() {
                 Ok(_) => debug!("MQTT Broker was started."),
                 Err(e) => error!("Failed to start MQTT Broker: {}", e),
@@ -64,7 +64,7 @@ impl Collector for Mqtt {
                     }
                 }
                 v => {
-                    debug!("{v:?}");
+                    trace!("{v:?}");
                     continue;
                 }
             };

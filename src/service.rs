@@ -1,4 +1,3 @@
-use std::thread;
 use crate::{
     collectors::{
         CollectorFactory,
@@ -10,7 +9,7 @@ use crate::{
 };
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 3)]
-pub async fn start(config: CollectorConfig) {
+pub async fn start(config: CollectorConfig) -> Result<(), anyhow::Error> {
     let factories: Vec<Box<dyn CollectorFactory>> = vec![
         Box::new(WebhookFactory::new(config.clone())),
         Box::new(MqttFactory::new(config.clone())),
@@ -22,7 +21,7 @@ pub async fn start(config: CollectorConfig) {
     for factory in &factories {
         let service = factory.as_ref().create();
         let name = service.name();
-        let handle = thread::spawn(move || {
+        let handle = std::thread::spawn(move || {
             let started = service.start();
             match started {
                Ok(_) => debug!("{} collector started.", name),
@@ -33,10 +32,8 @@ pub async fn start(config: CollectorConfig) {
     }
 
     debug!("collector service started.");
-    /*
     for handle in handles {
         handle.join().unwrap();
     }
-    */
-    loop {}
+    Ok(())
 }
