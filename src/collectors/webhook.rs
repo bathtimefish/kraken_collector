@@ -6,7 +6,7 @@ use std::result::Result;
 
 use crate::config::CollectorConfig;
 
-use super::Collector;
+use super::{Collector, CollectorFactory};
 use super::grpc;
 
 async fn post_webhook(req: Request<Body>) -> Result<Response<Body>, Infallible> {
@@ -39,8 +39,24 @@ pub struct Webhook {
     pub config: CollectorConfig,
 }
 
+pub struct WebhookFactory {
+    pub config: CollectorConfig,
+}
+
+impl WebhookFactory {
+    pub fn new(config: CollectorConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl CollectorFactory for WebhookFactory {
+    fn create(&self) -> Box<dyn Collector> {
+        Box::new(Webhook{ config: self.config.clone() })
+    }
+}
+
 impl Collector for Webhook {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "webhook"
     }
     #[tokio::main(flavor = "current_thread")]
