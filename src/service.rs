@@ -19,7 +19,7 @@ pub async fn start(config: CollectorConfig) -> Result<(), anyhow::Error> {
     let mut handles = Vec::new();
 
     for factory in &factories {
-        let service = factory.as_ref().create();
+        let service = factory.create();
         let name = service.name();
         let handle = std::thread::spawn(move || {
             let started = service.start();
