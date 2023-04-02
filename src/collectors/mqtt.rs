@@ -1,16 +1,31 @@
 use rumqttd::{Broker, Config, Notification};
-
-pub struct Mqtt {
-    pub config: CollectorConfig,
-}
-
+use super::Collector;
+use super::CollectorFactory;
+use super::grpc;
 use crate::config::CollectorConfig;
 
-use super::Collector;
-use super::grpc;
+pub struct Mqtt {
+    config: CollectorConfig,
+}
+
+pub struct MqttFactory {
+    config: CollectorConfig,
+}
+
+impl MqttFactory {
+    pub fn new(config: CollectorConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl CollectorFactory for MqttFactory {
+    fn create(&self) -> Box<dyn Collector> {
+        Box::new(Mqtt{ config: self.config.clone() })
+    }
+}
 
 impl Collector for Mqtt {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "mqtt"
     }
     #[tokio::main(flavor = "current_thread")]

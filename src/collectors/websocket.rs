@@ -5,22 +5,39 @@ use websocket::OwnedMessage;
 use crate::config::CollectorConfig;
 
 use super::Collector;
+use super::CollectorFactory;
 use super::grpc;
 
 pub struct Websocket {
     pub config: CollectorConfig,
 }
 
+pub struct WebsocketFactory {
+    pub config: CollectorConfig,
+}
+
+impl WebsocketFactory {
+    pub fn new(config: CollectorConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl CollectorFactory for WebsocketFactory {
+    fn create(&self) -> Box<dyn Collector> {
+        Box::new(Websocket{ config: self.config.clone() })
+    }
+}
+
 const SUB_PROTOCOL: &'static str = "kraken-ws";
 
 impl Collector for Websocket {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "websocket"
     }
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
         let host = self.config.websocket.host.clone();
-        // let sub_protocol = self.config.websocket.sub_protocol.clone(); // <-- うまくいかない
+        // let sub_protocol: &'static str = self.config.websocket.sub_protocol.as_str().clone(); // <-- うまくいかない
         let server = Server::bind(host.clone()).unwrap();
         debug!("Websocket server was started that is listening on ws://{}", &host);
 

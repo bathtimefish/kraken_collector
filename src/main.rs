@@ -30,6 +30,6 @@ fn main() -> Result<(), anyhow::Error>{
     env_logger::init();
     info!("RUST_ROG: {}", log_level);
     info!("KRAKEN Collector -- The Highlevel Data Collector -- boot squence start.");
-    service::start(config);
+    service::start(config).unwrap();
     Ok(())
 }

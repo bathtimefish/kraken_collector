@@ -6,16 +6,16 @@ use std::result::Result;
 
 use crate::config::CollectorConfig;
 
-use super::Collector;
+use super::{Collector, CollectorFactory};
 use super::grpc;
 
 async fn post_webhook(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let body_bytes = hyper::body::to_bytes(req.into_body()).await;
     let body = String::from_utf8(body_bytes.unwrap().to_vec()).unwrap();
-    info!("POST /webhook: {}", &body);
+    debug!("POST /webhook: {}", &body);
     let sent = grpc::send(&body.as_str(), &"webhook").await;
     match sent {
-        Ok(msg) => info!("Sent message to grpc server: {:?}", msg),
+        Ok(msg) => debug!("Sent message to grpc server: {:?}", msg),
         Err(msg) => error!("Failed to send to grpc: {:?}", msg),
     }
     let mut response = Response::new(Body::from("{ \"status\": \"POST_OK\"}"));
@@ -39,8 +39,24 @@ pub struct Webhook {
     pub config: CollectorConfig,
 }
 
+pub struct WebhookFactory {
+    pub config: CollectorConfig,
+}
+
+impl WebhookFactory {
+    pub fn new(config: CollectorConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl CollectorFactory for WebhookFactory {
+    fn create(&self) -> Box<dyn Collector> {
+        Box::new(Webhook{ config: self.config.clone() })
+    }
+}
+
 impl Collector for Webhook {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "webhook"
     }
     #[tokio::main(flavor = "current_thread")]
