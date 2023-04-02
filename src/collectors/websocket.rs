@@ -27,7 +27,7 @@ impl Collector for Websocket {
         for request in server.filter_map(Result::ok) {
             // Spawn a new thread for each connection.
             // !!!! thread::spawn(move || async {  <- asyncを入れると動作しない
-            tokio::spawn(async move {
+            std::thread::spawn(move || {
                 let sub_protocol = SUB_PROTOCOL;
                 let mut client = request.use_protocol(sub_protocol).accept().unwrap();
                 let ip = client.peer_addr().unwrap();
