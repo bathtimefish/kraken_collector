@@ -17,10 +17,15 @@ pub struct WebsocketCfg {
 }
 
 #[derive (Clone, Debug)]
-pub struct CollectorConfig {
-    pub broker_host: String,
-    pub broker_port: u16,
+pub struct GrpcCfg {
+    pub host: String,
+}
+
+
+#[derive (Clone, Debug)]
+pub struct CollectorCfg {
     pub webhook: WebhookCfg,
     pub mqtt: MqttCfg,
     pub websocket: WebsocketCfg,
+    pub grpc: GrpcCfg,
 }

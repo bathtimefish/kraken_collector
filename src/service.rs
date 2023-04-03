@@ -5,11 +5,11 @@ use crate::{
         mqtt::MqttFactory,
         websocket::WebsocketFactory, 
     },
-    config::CollectorConfig
+    config::CollectorCfg
 };
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 3)]
-pub async fn start(config: CollectorConfig) -> Result<(), anyhow::Error> {
+pub async fn start(config: CollectorCfg) -> Result<(), anyhow::Error> {
     let factories: Vec<Box<dyn CollectorFactory>> = vec![
         Box::new(WebhookFactory::new(config.clone())),
         Box::new(MqttFactory::new(config.clone())),
