@@ -1,37 +1,45 @@
-use std::thread;
-use crate::collectors::{
-    Collector,
-    webhook::Webhook,
-    mqtt::Mqtt,
-    websocket::Websocket,
+use crate::{
+    collectors::{
+        CollectorFactory,
+        webhook::WebhookFactory,
+        mqtt::MqttFactory,
+        websocket::WebsocketFactory, 
+    },
+    config::CollectorCfg
 };
 
-pub fn start() {
-    thread::spawn(move || {
-        let webhook: Webhook = Collector::new();
-        let started = webhook.start();
-        match started {
-            Ok(_) => debug!("Webhook collector started."),
-            Err(e) => error!("Failed to start webhook collector: {}", e),
-        }
-    });
-    thread::spawn(move || {
-        let mqtt: Mqtt = Collector::new();
-        let started = mqtt.start();
-        match started {
-            Ok(_) => debug!("MQTT collector started."),
-            Err(e) => error!("Failed to start MQTT collector: {}", e),
-        }
-    });
-    thread::spawn(move || {
-        let websocket: Websocket = Collector::new();
-        let started = websocket.start();
-        match started {
-            Ok(_) => debug!("Websocket collector started."),
-            Err(e) => error!("Failed to start websocket collector: {}", e),
-        }
-    });
+#[tokio::main(flavor = "multi_thread", worker_threads = 3)]
+pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
+    let factories: Vec<Box<dyn CollectorFactory>> = vec![
+        Box::new(WebhookFactory::new(config.clone())),
+        Box::new(MqttFactory::new(config.clone())),
+        Box::new(WebsocketFactory::new(config.clone())),
+    ];
 
-    debug!("collector service started.");
-    loop {}
+    let mut handles = Vec::new();
+
+    for factory in &factories {
+        let service = factory.create();
+        let name = service.name();
+        if service.is_enable() {
+            debug!("starting {} collector service...", name);
+            let handle = std::thread::spawn(move || {
+                let started = service.start();
+                match started {
+                Ok(_) => debug!("{} collector started.", name),
+                Err(e) => error!("Failed to start {} collector: {}", name, e),
+                }
+            });
+            handles.push(handle);
+        }
+    }
+    if handles.len() > 0 {
+        debug!("collector service started.");
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    } else {
+        return Err(anyhow::anyhow!("all collector service are not enabled."));
+    }
+    Ok(())
 }

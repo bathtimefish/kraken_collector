@@ -1019,6 +1019,7 @@ dependencies = [
  "anyhow",
  "confy",
  "env_logger",
+ "http",
  "hyper 0.14.25",
  "log 0.4.17",
  "prost",
