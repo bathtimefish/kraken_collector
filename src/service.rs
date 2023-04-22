@@ -22,7 +22,7 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
         let service = factory.create();
         let name = service.name();
         if service.is_enable() {
-            debug!("starting {} collector...", name);
+            debug!("starting {} collector service...", name);
             let handle = std::thread::spawn(move || {
                 let started = service.start();
                 match started {
