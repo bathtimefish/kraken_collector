@@ -28,6 +28,9 @@ impl Collector for Mqtt {
     fn name(&self) -> &'static str {
         "mqtt"
     }
+    fn is_enable(&self) -> bool {
+        self.config.mqtt.enable
+    }
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
         let mut mqtt_config: Config = confy::load_path("config/mqttd.conf").unwrap();

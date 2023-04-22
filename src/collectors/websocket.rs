@@ -33,6 +33,9 @@ impl Collector for Websocket {
     fn name(&self) -> &'static str {
         "websocket"
     }
+    fn is_enable(&self) -> bool {
+       self.config.websocket.enable
+    }
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
         let ws_config = self.config.websocket.clone();

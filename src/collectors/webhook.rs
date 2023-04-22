@@ -59,6 +59,9 @@ impl Collector for Webhook {
     fn name(&self) -> &'static str {
         "webhook"
     }
+    fn is_enable(&self) -> bool {
+        self.config.webhook.enable
+    }
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
         let config = self.config.webhook.clone();

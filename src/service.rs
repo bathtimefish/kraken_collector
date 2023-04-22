@@ -21,19 +21,25 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
     for factory in &factories {
         let service = factory.create();
         let name = service.name();
-        let handle = std::thread::spawn(move || {
-            let started = service.start();
-            match started {
-               Ok(_) => debug!("{} collector started.", name),
-               Err(e) => error!("Failed to start {} collector: {}", name, e),
-            }
-        });
-        handles.push(handle);
+        if service.is_enable() {
+            debug!("starting {} collector...", name);
+            let handle = std::thread::spawn(move || {
+                let started = service.start();
+                match started {
+                Ok(_) => debug!("{} collector started.", name),
+                Err(e) => error!("Failed to start {} collector: {}", name, e),
+                }
+            });
+            handles.push(handle);
+        }
     }
-
-    debug!("collector service started.");
-    for handle in handles {
-        handle.join().unwrap();
+    if handles.len() > 0 {
+        debug!("collector service started.");
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    } else {
+        return Err(anyhow::anyhow!("all collector service are not enabled."));
     }
     Ok(())
 }
