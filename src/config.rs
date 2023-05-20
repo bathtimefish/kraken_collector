@@ -12,6 +12,7 @@ pub struct MqttCfg {
     pub enable: bool,
     pub host: String,
     pub topic: String,
+    pub config_path: String,
 }
 
 #[derive (Clone, Debug)]
@@ -62,6 +63,7 @@ impl Default for CollectorCfg {
                 enable: mqtt_enable,
                 host: env::var("KRKNC_MQTT_HOST").unwrap_or("127.0.0.1:1883".to_string()),
                 topic: env::var("KRKNC_MQTT_TOPIC").unwrap_or("kraken".to_string()),
+                config_path: env::var("KRKNC_MQTT_CONFIG_PATH").unwrap_or("config/mqttd.conf".to_string()),
             },
             websocket: WebsocketCfg {
                 enable: websocket_enable,

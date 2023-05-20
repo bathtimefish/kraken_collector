@@ -33,7 +33,7 @@ impl Collector for Mqtt {
     }
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
-        let mut mqtt_config: Config = confy::load_path("config/mqttd.conf").unwrap();
+        let mut mqtt_config: Config = confy::load_path(self.config.mqtt.config_path.to_owned()).unwrap();
         let mut server_settings = mqtt_config.v4.get("1").unwrap().clone();
         let config = self.config.mqtt.clone();
         server_settings.listen = config.host.parse().unwrap();
