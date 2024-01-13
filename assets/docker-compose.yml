@@ -7,5 +7,5 @@ services:
     ports:
       - "8086:8086"
     volumes:
-      - "$PWD/db/influx:/var/lib/influxdb2"
+      - "/home/ubuntu/resources/db/influx:/var/lib/influxdb2"
     restart: always
