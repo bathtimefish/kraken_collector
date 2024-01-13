@@ -5,7 +5,7 @@ After=syslog.target network.target
 [Service]
 Type=simple
 EnvironmentFile=/etc/default/kraken_collector.env
-WorkingDirectory=/home/ubuntu/kraken
+WorkingDirectory=/home/ubuntu/kraken_collector
 ExecStart=/home/ubuntu/kraken_collector/bin/collector
 TimeoutStopSec=5
 KillMode=process
