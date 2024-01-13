@@ -1,6 +1,6 @@
 export KRKNC_BROKER_HOST=http://127.0.0.1:50051
 export KRKNC_WEBHOOK_PATH=webhook
-export KRKNC_WEBHOOK_PORT=3000
+export KRKNC_WEBHOOK_PORT=80
 export KRKNC_MQTT_HOST=0.0.0.0:1883
 export KRKNC_MQTT_TOPIC=kraken
 export KRKNC_MQTT_CONFIG_PATH=${PWD}/config/mqttd.conf
