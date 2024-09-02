@@ -3,6 +3,7 @@ use std::env;
 #[derive (Clone, Debug)]
 pub struct WebhookCfg {
     pub enable: bool,
+    #[allow(dead_code)]
     pub path: String,
     pub port: u16,
 }

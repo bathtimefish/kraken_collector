@@ -1,7 +1,7 @@
 use tonic::Response;
 use kraken::kraken_message_client::KrakenMessageClient;
 use kraken::{ KrakenMessageRequest, KrakenMessageResponse };
-use http::uri::Uri;
+use hyper::Uri;
 
 
 use crate::config::GrpcCfg;
