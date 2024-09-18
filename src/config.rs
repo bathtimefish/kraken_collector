@@ -11,7 +11,7 @@ pub struct WebhookCfg {
 #[derive (Clone, Debug)]
 pub struct MqttCfg {
     pub enable: bool,
-    pub host: String,
+    //pub host: String,
     pub topic: String,
     pub config_path: String,
 }
@@ -62,7 +62,7 @@ impl Default for CollectorCfg {
             },
             mqtt: MqttCfg {
                 enable: mqtt_enable,
-                host: env::var("KRKNC_MQTT_HOST").unwrap_or("127.0.0.1:1883".to_string()),
+                //host: env::var("KRKNC_MQTT_HOST").unwrap_or("127.0.0.1:1883".to_string()),
                 topic: env::var("KRKNC_MQTT_TOPIC").unwrap_or("kraken".to_string()),
                 config_path: env::var("KRKNC_MQTT_CONFIG_PATH").unwrap_or("config/mqttd.conf".to_string()),
             },

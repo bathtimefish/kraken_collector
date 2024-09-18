@@ -6,7 +6,11 @@ extern crate log;
 
 fn main() {
     env_logger::init();
-    let config: Config = confy::load_path("config/mqttd.conf").unwrap();
+    let config = config::Config::builder()
+        .add_source(config::File::with_name("config/rumqttd.toml"))
+        .build()
+        .unwrap();
+    let config: Config = config.try_deserialize().unwrap();
     /*
     let mut config: Config = Config::default();
     config.router.max_connections = 1000;
@@ -40,7 +44,7 @@ fn main() {
                 let message = str::from_utf8(bytes).unwrap();
                 warn!("{}: Message: {:?}", count, message);
             }
-            Notification::ForwardWithProperties(a, b) => {
+            Notification::Disconnect(a, b) => {
                 info!("ForwardWithProperties: {:?}, {:?}", a, b);
             }
             v => {
