@@ -96,7 +96,7 @@ impl Collector for Webhook {
         let grpc_config = Arc::new(Mutex::new(self.config.grpc.clone()));  // Arcでラップ
         let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
         let listener = TcpListener::bind(&addr).await?;
-        println!("Listening on http://{}", addr);
+        debug!("Webhook server is listening on http://{}", addr);
 
         loop {
             let (stream, _) = listener.accept().await?;
@@ -107,7 +107,7 @@ impl Collector for Webhook {
                     move |req| handle_request(req, grpc_config.clone())  // grpc_config をクローンして渡す
                 );
                 if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
-                    println!("Failed to serve connection: {:?}", err);
+                    error!("Failed to serve connection: {:?}", err);
                 }
             });
         }
