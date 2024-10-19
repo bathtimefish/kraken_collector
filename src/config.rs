@@ -3,6 +3,7 @@ use std::env;
 #[derive (Clone, Debug)]
 pub struct WebhookCfg {
     pub enable: bool,
+    #[allow(dead_code)]
     pub path: String,
     pub port: u16,
 }
@@ -10,7 +11,7 @@ pub struct WebhookCfg {
 #[derive (Clone, Debug)]
 pub struct MqttCfg {
     pub enable: bool,
-    pub host: String,
+    //pub host: String,
     pub topic: String,
     pub config_path: String,
 }
@@ -20,6 +21,13 @@ pub struct WebsocketCfg {
     pub enable: bool,
     pub host: String,
     pub sub_protocol: String,
+}
+
+#[derive (Clone, Debug)]
+pub struct IbeaconCfg {
+    pub enable: bool,
+    pub filter_duration: u64,
+    pub allowed_uuid_filter_path: String,
 }
 
 #[derive (Clone, Debug)]
@@ -34,6 +42,7 @@ pub struct CollectorCfg {
     pub mqtt: MqttCfg,
     pub websocket: WebsocketCfg,
     pub grpc: GrpcCfg,
+    pub ibeacon: IbeaconCfg,
 }
 
 impl Default for CollectorCfg {
@@ -41,14 +50,18 @@ impl Default for CollectorCfg {
         let mut webhook_enable = false;
         let mut mqtt_enable = false;
         let mut websocket_enable = false;
+        let mut ibeacon_enable = false;
         if env::var("KRKNC_WEBHOOK_PATH").is_ok() {
             webhook_enable = true;
         }
-        if env::var("KRKNC_MQTT_HOST").is_ok() {
+        if env::var("KRKNC_MQTT_CONFIG_PATH").is_ok() {
             mqtt_enable = true;
         }
         if env::var("KRKNC_WEBSOCKET_HOST").is_ok() {
             websocket_enable = true;
+        }
+        if env::var("KRKNC_IBEACON_ALLOWED_UUIDS_FILE_PATH").is_ok() {
+            ibeacon_enable = true;
         }
         CollectorCfg {
             grpc: GrpcCfg {
@@ -61,7 +74,7 @@ impl Default for CollectorCfg {
             },
             mqtt: MqttCfg {
                 enable: mqtt_enable,
-                host: env::var("KRKNC_MQTT_HOST").unwrap_or("127.0.0.1:1883".to_string()),
+                //host: env::var("KRKNC_MQTT_HOST").unwrap_or("127.0.0.1:1883".to_string()),
                 topic: env::var("KRKNC_MQTT_TOPIC").unwrap_or("kraken".to_string()),
                 config_path: env::var("KRKNC_MQTT_CONFIG_PATH").unwrap_or("config/mqttd.conf".to_string()),
             },
@@ -69,6 +82,11 @@ impl Default for CollectorCfg {
                 enable: websocket_enable,
                 host: env::var("KRKNC_WEBSOCKET_HOST").unwrap_or("127.0.0.1:2794".to_string()),
                 sub_protocol: env::var("KRKNC_WEBSOCKET_SUB_PROTOCOL").unwrap_or("kraken-ws".to_string()),
+            },
+            ibeacon: IbeaconCfg {
+                enable: ibeacon_enable,
+                filter_duration: env::var("KRKNC_IBEACON_FILTER_DURATION").unwrap_or("1".to_string()).parse::<u64>().unwrap(),
+                allowed_uuid_filter_path: env::var("KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH").unwrap_or("config/allowed_uuids.yml".to_string()),
             },
         }
     }

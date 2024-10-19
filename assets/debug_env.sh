@@ -1,3 +1,3 @@
 #!/bin/sh
 
-export RUST_LOG=error,main=debug
+export RUST_LOG=main=debug
