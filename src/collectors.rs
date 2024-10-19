@@ -13,3 +13,4 @@ pub mod grpc;
 pub mod webhook;
 pub mod mqtt;
 pub mod websocket;
+pub mod ibeacon;

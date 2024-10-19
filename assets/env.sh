@@ -6,3 +6,5 @@ export KRKNC_MQTT_TOPIC=kraken
 export KRKNC_MQTT_CONFIG_PATH=${PWD}/config/rumqttd.toml
 export KRKNC_WEBSOCKET_HOST=0.0.0.0:2794
 export KRKNC_WEBSOCKET_SUB_PROTOCOL=kraken-ws
+export KRKNC_IBEACON_FILTER_DURATION_SEC=1
+export KRKNC_IBEACON_ALLOWED_UUIDS_FILE_PATH=${PWD}/config/allowed_uuids.yml
