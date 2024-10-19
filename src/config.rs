@@ -26,7 +26,7 @@ pub struct WebsocketCfg {
 #[derive (Clone, Debug)]
 pub struct IbeaconCfg {
     pub enable: bool,
-    pub fiulter_duration: u64,
+    pub filter_duration: u64,
     pub allowed_uuid_filter_path: String,
 }
 
@@ -60,7 +60,7 @@ impl Default for CollectorCfg {
         if env::var("KRKNC_WEBSOCKET_HOST").is_ok() {
             websocket_enable = true;
         }
-        if env::var("KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH").is_ok() {
+        if env::var("KRKNC_IBEACON_ALLOWED_UUIDS_FILE_PATH").is_ok() {
             ibeacon_enable = true;
         }
         CollectorCfg {
@@ -85,7 +85,7 @@ impl Default for CollectorCfg {
             },
             ibeacon: IbeaconCfg {
                 enable: ibeacon_enable,
-                fiulter_duration: env::var("KRKNC_IBEACON_FILTER_DURATION").unwrap_or("1".to_string()).parse::<u64>().unwrap(),
+                filter_duration: env::var("KRKNC_IBEACON_FILTER_DURATION").unwrap_or("1".to_string()).parse::<u64>().unwrap(),
                 allowed_uuid_filter_path: env::var("KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH").unwrap_or("config/allowed_uuids.yml".to_string()),
             },
         }
