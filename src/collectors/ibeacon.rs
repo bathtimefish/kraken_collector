@@ -6,7 +6,6 @@ use std::time::{Duration, Instant};
 use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter, CentralEvent};
 use btleplug::platform::Manager;
 use futures::stream::StreamExt;
-use log::{info, error};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -61,7 +60,7 @@ impl Collector for Ibeacon {
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
         let grpc_config = self.config.grpc.clone();
-        info!("Using allowed uuid list: {}", &self.config.ibeacon.allowed_uuid_filter_path);
+        debug!("Using allowed uuid list: {}", &self.config.ibeacon.allowed_uuid_filter_path);
         let config = match load_config(&self.config.ibeacon.allowed_uuid_filter_path) {
             Ok(config) => config,
             Err(e) => {
@@ -92,13 +91,13 @@ impl Collector for Ibeacon {
         }
 
         let adapter = adapter_list.into_iter().nth(0).unwrap();
-        info!("Adapter selected: {}", adapter.adapter_info().await?);
+        debug!("Adapter selected: {}", adapter.adapter_info().await?);
 
         // set filter duration 
         let filter_duration_secs = self.config.ibeacon.filter_duration; 
         let filter_duration = Duration::from_secs(filter_duration_secs);
 
-        info!("Using filter interval duration: {} seconds", filter_duration_secs);
+        debug!("Using filter interval duration: {} seconds", filter_duration_secs);
 
         // start scaning 
         let scan_filter = ScanFilter {
@@ -199,9 +198,9 @@ async fn process_ibeacon_data(
         };
 
         let json = json!(ibeacon_data);
-        info!("iBeacon detected: {} ({}), UUID: {}, Major: {}, Minor: {}, RSSI: {}",
+        debug!("iBeacon detected: {} ({}), UUID: {}, Major: {}, Minor: {}, RSSI: {}",
               local_name, address, uuid, major, minor, rssi);
-        info!("JSON: {}", serde_json::to_string_pretty(&json)?);
+        debug!("JSON: {}", serde_json::to_string_pretty(&json)?);
         let sent = grpc::send(&grpc_config, &serde_json::to_string(&json).unwrap(), &"ibeacon").await;
     
         match sent {
