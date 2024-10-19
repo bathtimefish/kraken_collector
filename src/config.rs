@@ -45,7 +45,7 @@ impl Default for CollectorCfg {
         if env::var("KRKNC_WEBHOOK_PATH").is_ok() {
             webhook_enable = true;
         }
-        if env::var("KRKNC_MQTT_HOST").is_ok() {
+        if env::var("KRKNC_MQTT_CONFIG_PATH").is_ok() {
             mqtt_enable = true;
         }
         if env::var("KRKNC_WEBSOCKET_HOST").is_ok() {
