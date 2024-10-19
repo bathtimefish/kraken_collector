@@ -3,17 +3,19 @@ use crate::{
         CollectorFactory,
         webhook::WebhookFactory,
         mqtt::MqttFactory,
-        websocket::WebsocketFactory, 
+        websocket::WebsocketFactory,
+        ibeacon::IbeaconFactory,
     },
     config::CollectorCfg
 };
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 3)]
+#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
     let factories: Vec<Box<dyn CollectorFactory>> = vec![
         Box::new(WebhookFactory::new(config.clone())),
         Box::new(MqttFactory::new(config.clone())),
         Box::new(WebsocketFactory::new(config.clone())),
+        Box::new(IbeaconFactory::new(config.clone())),
     ];
 
     let mut handles = Vec::new();
