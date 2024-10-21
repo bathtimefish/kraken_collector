@@ -60,7 +60,7 @@ impl Default for CollectorCfg {
         if env::var("KRKNC_WEBSOCKET_HOST").is_ok() {
             websocket_enable = true;
         }
-        if env::var("KRKNC_IBEACON_ALLOWED_UUIDS_FILE_PATH").is_ok() {
+        if env::var("KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH").is_ok() {
             ibeacon_enable = true;
         }
         CollectorCfg {
