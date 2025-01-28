@@ -31,6 +31,14 @@ pub struct IbeaconCfg {
 }
 
 #[derive (Clone, Debug)]
+pub struct SerialCfg {
+    pub enable: bool,
+    pub port: String,
+    pub baudrate: u32,
+    pub timeout: u64,
+}
+
+#[derive (Clone, Debug)]
 pub struct GrpcCfg {
     pub host: String,
 }
@@ -43,6 +51,7 @@ pub struct CollectorCfg {
     pub websocket: WebsocketCfg,
     pub grpc: GrpcCfg,
     pub ibeacon: IbeaconCfg,
+    pub serial: SerialCfg,
 }
 
 impl Default for CollectorCfg {
@@ -51,6 +60,7 @@ impl Default for CollectorCfg {
         let mut mqtt_enable = false;
         let mut websocket_enable = false;
         let mut ibeacon_enable = false;
+        let mut serial_enable = false;
         if env::var("KRKNC_WEBHOOK_PATH").is_ok() {
             webhook_enable = true;
         }
@@ -62,6 +72,9 @@ impl Default for CollectorCfg {
         }
         if env::var("KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH").is_ok() {
             ibeacon_enable = true;
+        }
+        if env::var("KRKNC_SERIAL_PORT").is_ok() {
+            serial_enable = true;
         }
         CollectorCfg {
             grpc: GrpcCfg {
@@ -87,6 +100,12 @@ impl Default for CollectorCfg {
                 enable: ibeacon_enable,
                 filter_duration: env::var("KRKNC_IBEACON_FILTER_DURATION").unwrap_or("1".to_string()).parse::<u64>().unwrap(),
                 allowed_uuid_filter_path: env::var("KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH").unwrap_or("config/allowed_uuids.yml".to_string()),
+            },
+            serial: SerialCfg {
+                enable: serial_enable,
+                port: env::var("KRKNC_SERIAL_PORT").unwrap_or("/dev/ttyACM0".to_string()),
+                baudrate: env::var("KRKNC_SERIAL_BAUDRATE").unwrap_or("9600".to_string()).parse::<u32>().unwrap(),
+                timeout: env::var("KRKNC_SERIAL_TIMEOUT_SEC").unwrap_or("10".to_string()).parse::<u64>().unwrap(),
             },
         }
     }
