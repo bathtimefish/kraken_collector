@@ -33,6 +33,7 @@ pub struct IbeaconCfg {
 #[derive (Clone, Debug)]
 pub struct SerialCfg {
     pub enable: bool,
+    pub device_name: String,
     pub port: String,
     pub baudrate: u32,
     pub timeout: u64,
@@ -73,7 +74,7 @@ impl Default for CollectorCfg {
         if env::var("KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH").is_ok() {
             ibeacon_enable = true;
         }
-        if env::var("KRKNC_SERIAL_PORT").is_ok() {
+        if env::var("KRKNC_SERIAL_DEVICE_NAME").is_ok() {
             serial_enable = true;
         }
         CollectorCfg {
@@ -103,6 +104,7 @@ impl Default for CollectorCfg {
             },
             serial: SerialCfg {
                 enable: serial_enable,
+                device_name: env::var("KRKNC_SERIAL_DEVICE_NAME").unwrap_or("unknown".to_string()),
                 port: env::var("KRKNC_SERIAL_PORT").unwrap_or("/dev/ttyACM0".to_string()),
                 baudrate: env::var("KRKNC_SERIAL_BAUDRATE").unwrap_or("9600".to_string()).parse::<u32>().unwrap(),
                 timeout: env::var("KRKNC_SERIAL_TIMEOUT_SEC").unwrap_or("10".to_string()).parse::<u64>().unwrap(),

@@ -8,6 +8,7 @@ use crate::config::CollectorCfg;
 
 #[derive(Debug, serde::Serialize)]
 struct SerialData {
+    device_name: String,
     hex_string: String,
 }
 
@@ -64,7 +65,10 @@ impl Collector for Serial {
                                     .map(|b| format!("{:02x}", b))
                                     .collect();
                                 debug!("Received {} bytes: {}", t, hex_string);
-                                let data = SerialData { hex_string };
+                                let data = SerialData {
+                                    device_name: self.config.serial.device_name.clone(),
+                                    hex_string
+                                };
                                 let json = json!(data);
                                 let sent = grpc::send(&self.config.grpc, &serde_json::to_string(&json).unwrap(), &"serial").await;
                                 match sent {
