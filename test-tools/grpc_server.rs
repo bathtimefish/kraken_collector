@@ -1,6 +1,6 @@
 use tonic::{transport::Server, Request, Response, Status};
-use kraken::kraken_message_server::{KrakenMessage, KrakenMessageServer};
-use kraken::{KrakenMessageRequest, KrakenMessageResponse};
+use kraken::kraken_service_server::{KrakenService, KrakenServiceServer};
+use kraken::{KrakenRequest, KrakenResponse};
 
 pub mod kraken {
   tonic::include_proto!("kraken");
@@ -10,15 +10,19 @@ pub mod kraken {
 pub struct KrakenBroker {}
 
 #[tonic::async_trait]
-impl KrakenMessage for KrakenBroker {
-  async fn send(
+impl KrakenService for KrakenBroker {
+  async fn process_kraken_request(
     &self,
-    request: Request<KrakenMessageRequest>,
-  ) -> Result<Response<KrakenMessageResponse>, Status> {
+    request: Request<KrakenRequest>,
+  ) -> Result<Response<KrakenResponse>, Status> {
     println!("Got a request: {:?}", request);
-    println!("{:?}", request.into_inner().payload);
-    let reply = kraken::KrakenMessageResponse {
-      status: 1,
+    let payload = request.get_ref().payload.clone();
+    println!("{:?}", payload);
+    let reply = kraken::KrakenResponse {
+      collector_name: "example_collector".to_string(),
+      content_type: "example_type".to_string(),
+      metadata: "example_metadata".to_string(),
+      payload,
     };
     Ok(Response::new(reply))
   }
@@ -29,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let addr = "[::1]:50051".parse()?;
   let broker = KrakenBroker::default();
   Server::builder()
-    .add_service(KrakenMessageServer::new(broker))
+    .add_service(KrakenServiceServer::new(broker))
     .serve(addr)
     .await?;
   Ok(())
