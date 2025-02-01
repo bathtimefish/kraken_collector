@@ -7,9 +7,8 @@ use super::grpc;
 use crate::config::CollectorCfg;
 
 #[derive(Debug, serde::Serialize)]
-struct SerialData {
+struct MetaData {
     device_name: String,
-    hex_string: String,
 }
 
 pub struct Serial {
@@ -59,18 +58,17 @@ impl Collector for Serial {
                     match port.read(serial_buf.as_mut_slice()) {
                         Ok(t) => {
                             if t > 0 {
-                                // encode to hex string 
-                                let hex_string: String = serial_buf[..t]
-                                    .iter()
-                                    .map(|b| format!("{:02x}", b))
-                                    .collect();
-                                debug!("Received {} bytes: {}", t, hex_string);
-                                let data = SerialData {
+                                let metadata = MetaData {
                                     device_name: self.config.serial.device_name.clone(),
-                                    hex_string
                                 };
-                                let json = json!(data);
-                                let sent = grpc::send(&self.config.grpc, &serde_json::to_string(&json).unwrap(), &"serial").await;
+                                let meta_json = json!(metadata);
+                                let sent = grpc::send(
+                                    &self.config.grpc,
+                                    "serial",
+                                    "application/octet-stream",
+                                    &serde_json::to_string(&meta_json).unwrap(),
+                                    &serial_buf[..t],
+                                ).await;
                                 match sent {
                                     Ok(msg) => debug!("Sent message to grpc server: {:?}", msg),
                                     Err(msg) => error!("Failed to send to grpc: {:?}", msg),

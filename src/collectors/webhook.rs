@@ -32,7 +32,13 @@ async fn post_webhook(req: Request<IncomingBody>, grpc_config: Arc<Mutex<GrpcCfg
     let json_str = serde_json::to_string(&body)?;
     
     let grpc_config = grpc_config.lock().await;
-    let sent = grpc::send(&*grpc_config, &json_str, &"webhook").await;
+    let sent = grpc::send(
+        &*grpc_config,
+        "webhook",
+        "application/json",
+        "{}",
+        &json_str.as_bytes()
+    ).await;
 
     match sent {
         Ok(msg) => debug!("Sent message to grpc server: {:?}", msg),

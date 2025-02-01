@@ -85,7 +85,15 @@ impl Collector for Websocket {
                                     .enable_all()
                                     .build()
                                     .unwrap()
-                                    .block_on(grpc::send(&grpc_config, &payload, "websocket")).unwrap();
+                                    .block_on(
+                                        grpc::send(
+                                            &grpc_config,
+                                            "websocket",
+                                            "application/json",
+                                            "{}",
+                                            &payload.as_bytes()
+                                        )
+                                    ).unwrap();
                             }
                             _ => sender.send_message(&message).unwrap(),
                         }
