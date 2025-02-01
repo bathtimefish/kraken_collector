@@ -7,7 +7,7 @@ Kraken Collector - The data collector function which is a part of the high level
 
 ```
 sudo apt update
-sudo apt install -y protobuf-compiler
+sudo apt install -y protobuf-compiler libudev-dev
 
 cargo build
 RUST_LOG=error,main=debug cargo run
