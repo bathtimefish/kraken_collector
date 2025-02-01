@@ -1582,7 +1582,7 @@ dependencies = [
 
 [[package]]
 name = "kraken_collector"
-version = "0.1.4"
+version = "2.0.0"
 dependencies = [
  "anyhow",
  "btleplug",
