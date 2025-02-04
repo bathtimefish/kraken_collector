@@ -47,6 +47,9 @@ Set environment variables to launch the broker as a Slack broker:
 export PYTHONDONTWRITEBYTECODE=1 export KRAKENB_DEBUG=1 export KRAKENB_GRPC_HOST=[::]:50051 export KRAKENB_SLACK_URL=[YOUR_SLACK_WEBHOOK_URL]
 ```
 
+sudo apt update
+sudo apt install -y protobuf-compiler libudev-dev
+
 Start the broker:
 ```bash
 python ./src/main.py
