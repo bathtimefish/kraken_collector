@@ -49,7 +49,7 @@ export PYTHONDONTWRITEBYTECODE=1 export KRAKENB_DEBUG=1 export KRAKENB_GRPC_HOST
 
 ```bash
 sudo apt update
-sudo apt install -y protobuf-compiler libudev-dev
+sudo apt install -y protobuf-compiler libudev-dev libssl-dev
 ```
 
 Start the broker:
@@ -66,7 +66,7 @@ INFO:root:KRAKEN BROKER is running as debug mode.
 ## Setup Collector
 Build the collector:
 ```bash
-sudo apt install -y protobuf-compiler libudev-dev
+sudo apt install -y protobuf-compiler libudev-dev libssl-dev
 git clone https://github.com/bathtimefish/kraken_collector
 cd kraken_collector
 cargo build
