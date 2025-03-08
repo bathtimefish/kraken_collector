@@ -47,8 +47,10 @@ Set environment variables to launch the broker as a Slack broker:
 export PYTHONDONTWRITEBYTECODE=1 export KRAKENB_DEBUG=1 export KRAKENB_GRPC_HOST=[::]:50051 export KRAKENB_SLACK_URL=[YOUR_SLACK_WEBHOOK_URL]
 ```
 
+```bash
 sudo apt update
 sudo apt install -y protobuf-compiler libudev-dev
+```
 
 Start the broker:
 ```bash
@@ -64,6 +66,7 @@ INFO:root:KRAKEN BROKER is running as debug mode.
 ## Setup Collector
 Build the collector:
 ```bash
+sudo apt install -y protobuf-compiler libudev-dev
 git clone https://github.com/bathtimefish/kraken_collector
 cd kraken_collector
 cargo build
