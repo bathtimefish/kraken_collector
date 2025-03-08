@@ -54,7 +54,7 @@ export KRAKENB_SLACK_URL=[YOUR_SLACK_WEBHOOK_URL]
 
 ```bash
 sudo apt update
-sudo apt install -y protobuf-compiler libudev-dev libssl-dev
+sudo apt install -y protobuf-compiler libudev-dev libssl-dev libdbus-1-dev pkg-config
 ```
 
 Blokerを起動します
@@ -71,7 +71,7 @@ INFO:root:KRAKEN BROKER is running as debug mode.
 ## Setup Collector
 Collectorをビルドします
 ```bash
-sudo apt install -y protobuf-compiler libudev-dev libssl-dev
+sudo apt install -y protobuf-compiler libudev-dev libssl-dev libdbus-1-dev pkg-config
 git clone https://github.com/bathtimefish/kraken_collector
 cd kraken_collector
 cargo build
