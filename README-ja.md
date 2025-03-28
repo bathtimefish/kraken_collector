@@ -39,52 +39,58 @@ Kraken CollectorはRustで開発されており、[Kraken Broker](https://github
 
 ## Setup Broker
 Brokerをcloneします
-```
+```bash
 git clone https://github.com/bathtimefish/kraken_broker_python
 kraken_broker_python
 ```
 
 BlockerをSlackブローカーとして起動するための環境変数を設定します
-```
+```bash
 export PYTHONDONTWRITEBYTECODE=1 \
 export KRAKENB_DEBUG=1 \
 export KRAKENB_GRPC_HOST=[::]:50051 \
 export KRAKENB_SLACK_URL=[YOUR_SLACK_WEBHOOK_URL]
 ```
 
-Blokerを起動します
+```bash
+sudo apt update
+sudo apt install -y protobuf-compiler libudev-dev libssl-dev libdbus-1-dev pkg-config
 ```
+
+Blokerを起動します
+```bash
 python ./src/main.py
 ```
 
 以下のようなログが表示されると起動が成功しています
-```
+```bash
 INFO:root:gRPC server was started on `[::]:50051`
 INFO:root:KRAKEN BROKER is running as debug mode.
 ```
 
 ## Setup Collector
 Collectorをビルドします
-```
+```bash
+sudo apt install -y protobuf-compiler libudev-dev libssl-dev libdbus-1-dev pkg-config
 git clone https://github.com/bathtimefish/kraken_collector
 cd kraken_collector
 cargo build
 ```
 
 CollectorをWebhookレシーバとして起動するための環境変数を設定します
-```
+```bash
 export KRKNC_BROKER_HOST=http://[::1]:50051 \
 exoprt KRKNC_WEBHOOK_PATH=webhook \
 export KRKNC_WEBHOOK_PORT=3000
 ```
 
 Collectorを起動します
-```
+```bash
 RUST_LOG=error,main=debug cargo run --bin main
 ```
 
 以下のようなログが表示されると起動が成功しています
-```
+```bash
 [2024-01-01T00:00:00Z INFO  main] KRAKEN Collector -- The Highlevel Data Collector -- boot squence start.
 [2024-01-01T00:00:00Z DEBUG main::service] starting webhook collector service...
 [2024-01-01T00:00:00Z DEBUG main::service] collector service started.
@@ -93,12 +99,12 @@ RUST_LOG=error,main=debug cargo run --bin main
 
 ## Send data to Collector
 Collectorにデータを送信します
-```
+```bash
 curl -X POST -H "Content-Type: application/json" -d '{"id":"101", "name":"env-sensor", "temp":"25.6", "hum":"52.4"}' http://localhost:3000/webhook
 ```
 
 Slackで以下のようなメッセージが受信できたなら、Kraken Collector/Brokerは正常に動作しています
-```
+```bash
 kind=collector, provider=webhook, payload={"id":"101", "name":"env-sensor", "temp":"25.6", "hum":"52.4"}
 ```
 
@@ -118,7 +124,7 @@ Collectorの機能は環境変数で設定します。現在以下の環境変�
 ## KRKNC_BROKER_HOST
 BrokerのURLを指定します。多くの場合次のような設定で良いはずです。
 
-```
+```bash
 KRKNC_BROKER_HOST=http://[::1]:50051
 ```
 ## Webhooks
@@ -133,7 +139,7 @@ MQTT Broker機能は `KRKNC_MQTT_HOST` `KRKNC_MQTT_TOPIC` `KRKNC_MQTT_CONFIG_PAT
 ### KRKNC_MQTT_HOST
 MQTT Brokerのホストアドレスを指定します。多くの場合、次のような設定で良いはずです。
 
-```
+```bash
 KRKNC_MQTT_HOST=0.0.0.0:1883
 ```
 ### KRKNC_MQTT_TOPIC
@@ -146,7 +152,7 @@ Websocket Server機能は `KRKNC_WEBSOCKET_HOST` `KRKNC_WEBSOCKET_SUB_PROTOCOL` 
 ### KRKNC_WEBSOCKET_HOST
 Websocket Serverのホストアドレスを指定します。多くの場合、次のような設定で良いはずです。
 
-```
+```bash
 KRKNC_WEBSOCKET_HOST=0.0.0.0:2794
 ```
 ### KRKNC_WEBSOCKET_SUB_PROTOCOL
