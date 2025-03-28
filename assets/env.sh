@@ -1,4 +1,4 @@
-#export KRKNC_MQTT_HOST=0.0.0.0:1883
+export RUST_LOG=main=debug
 export KRKNC_BROKER_HOST=http://127.0.0.1:50051
 export KRKNC_WEBHOOK_PATH=webhook
 export KRKNC_WEBHOOK_PORT=80

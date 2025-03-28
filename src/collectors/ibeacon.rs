@@ -201,7 +201,13 @@ async fn process_ibeacon_data(
         debug!("iBeacon detected: {} ({}), UUID: {}, Major: {}, Minor: {}, RSSI: {}",
               local_name, address, uuid, major, minor, rssi);
         debug!("JSON: {}", serde_json::to_string_pretty(&json)?);
-        let sent = grpc::send(&grpc_config, &serde_json::to_string(&json).unwrap(), &"ibeacon").await;
+        let sent = grpc::send(
+            &grpc_config,
+            "ibeacon",
+            "application/json",
+            "{}",
+            &serde_json::to_string(&json).unwrap().as_bytes()
+        ).await;
     
         match sent {
             Ok(msg) => debug!("Sent message to grpc server: {:?}", msg),

@@ -64,7 +64,13 @@ impl Collector for Mqtt {
                     Notification::Forward(forward) => {
                         debug!("Forward: {:?}", forward);
                         let message = String::from_utf8_lossy(&forward.publish.payload);
-                        let sent = grpc::send(&self.config.grpc, &message, "mqtt").await;
+                        let sent = grpc::send(
+                            &self.config.grpc,
+                            "mqtt",
+                            "application/json",
+                            "{}",
+                            message.as_bytes(),
+                        ).await;
                         if let Err(e) = sent {
                             error!("Failed to send to grpc: {:?}", e);
                         } else {
