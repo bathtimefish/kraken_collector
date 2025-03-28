@@ -94,7 +94,7 @@ impl Default for CollectorCfg {
         if env::var("KRKNC_SERIAL_DEVICE_NAME").is_ok() {
             serial_enable = true;
         }
-        if env::var("KRKNC_TEXT_FILE_MONITOR_DIR_PATH").is_ok() {
+        if env::var("KRKNC_TEXTFILE_MONITOR_DIR_PATH").is_ok() {
             textfile_enable = true;
         }
         CollectorCfg {
