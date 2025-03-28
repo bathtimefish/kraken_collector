@@ -42,22 +42,6 @@ struct CleanupOptions {
     remove_all_folders: bool,
 }
 
-fn parse_bool_env(name: &str, default: bool) -> Result<bool> {
-    match std::env::var(name) {
-        Ok(val) => val.parse::<bool>()
-            .with_context(|| format!("Invalid boolean value for {}: {}", name, val)),
-        Err(_) => Ok(default)
-    }
-}
-
-fn parse_u64_env(name: &str, default: u64) -> Result<u64> {
-    match std::env::var(name) {
-        Ok(val) => val.parse::<u64>()
-            .with_context(|| format!("Invalid numeric value for {}: {}", name, val)),
-        Err(_) => Ok(default)
-    }
-}
-
 fn check_file_validity(file_path: &Path) -> Result<()> {
     if !file_path.exists() {
         bail!("Target file not found: {}", file_path.display());
@@ -420,16 +404,16 @@ impl Collector for Textfile {
             } else {
                 MonitoringMode::EventDriven
             },
-            interval_sec: parse_u64_env("MONITOR_INTERVAL_SEC", self.config.text_file.interval_sec).unwrap(),
+            interval_sec: self.config.text_file.interval_sec,
             file_options: FileOptions {
-                allow_create: parse_bool_env("ALLOW_CREATE", self.config.text_file.allow_create).unwrap(),
-                allow_modify: parse_bool_env("ALLOW_MODIFY", self.config.text_file.allow_modify).unwrap(),
+                allow_create: self.config.text_file.allow_create,
+                allow_modify: self.config.text_file.allow_modify,
             },
             cleanup_options: CleanupOptions {
-                remove_created_file_after_read: parse_bool_env("REMOVE_CREATED_FILE_AFTER_READ", self.config.text_file.remove_created).unwrap(),
-                remove_files_except_modified_after_read: parse_bool_env("REMOVE_FILES_EXCEPT_MODIFIED_AFTER_READ", self.config.text_file.remove_except_modified).unwrap(),
-                remove_all_files_after_read: parse_bool_env("REMOVE_ALL_FILES_AFTER_READ", self.config.text_file.remove_all_files).unwrap(),
-                remove_all_folders: parse_bool_env("REMOVE_ALL_FOLDERS", self.config.text_file.remove_all_folder).unwrap(),
+                remove_created_file_after_read: self.config.text_file.remove_created,
+                remove_files_except_modified_after_read: self.config.text_file.remove_except_modified,
+                remove_all_files_after_read: self.config.text_file.remove_all_files,
+                remove_all_folders: self.config.text_file.remove_all_folder,
             },
         };
         match config.monitoring_mode {
