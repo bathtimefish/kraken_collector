@@ -15,3 +15,4 @@ pub mod mqtt;
 pub mod websocket;
 pub mod ibeacon;
 pub mod serial;
+pub mod textfile;

@@ -40,6 +40,21 @@ pub struct SerialCfg {
 }
 
 #[derive (Clone, Debug)]
+pub struct TextFileCfg {
+    pub enable: bool,
+    pub target_file_path: String,
+    pub monitor_dir_path: String,
+    pub interval_sec: u64,
+    pub monitoring_mode: String,
+    pub allow_create: bool,
+    pub allow_modify: bool,
+    pub remove_created: bool,
+    pub remove_except_modified: bool,
+    pub remove_all_files: bool,
+    pub remove_all_folder: bool,
+}
+
+#[derive (Clone, Debug)]
 pub struct GrpcCfg {
     pub host: String,
 }
@@ -53,6 +68,7 @@ pub struct CollectorCfg {
     pub grpc: GrpcCfg,
     pub ibeacon: IbeaconCfg,
     pub serial: SerialCfg,
+    pub text_file: TextFileCfg,
 }
 
 impl Default for CollectorCfg {
@@ -62,6 +78,7 @@ impl Default for CollectorCfg {
         let mut websocket_enable = false;
         let mut ibeacon_enable = false;
         let mut serial_enable = false;
+        let mut textfile_enable = false;
         if env::var("KRKNC_WEBHOOK_PATH").is_ok() {
             webhook_enable = true;
         }
@@ -76,6 +93,9 @@ impl Default for CollectorCfg {
         }
         if env::var("KRKNC_SERIAL_DEVICE_NAME").is_ok() {
             serial_enable = true;
+        }
+        if env::var("KRKNC_TEXTFILE_MONITOR_DIR_PATH").is_ok() {
+            textfile_enable = true;
         }
         CollectorCfg {
             grpc: GrpcCfg {
@@ -108,6 +128,19 @@ impl Default for CollectorCfg {
                 port: env::var("KRKNC_SERIAL_PORT").unwrap_or("/dev/ttyACM0".to_string()),
                 baudrate: env::var("KRKNC_SERIAL_BAUDRATE").unwrap_or("9600".to_string()).parse::<u32>().unwrap(),
                 timeout: env::var("KRKNC_SERIAL_TIMEOUT_SEC").unwrap_or("10".to_string()).parse::<u64>().unwrap(),
+            },
+            text_file: TextFileCfg {
+                enable: textfile_enable,
+                target_file_path: env::var("KRKNC_TEXTFILE_TARGET_FILE_PATH").unwrap_or("data/data.txt".to_string()),
+                monitor_dir_path: env::var("KRKNC_TEXTFILE_MONITOR_DIR_PATH").unwrap_or("data/".to_string()),
+                interval_sec: env::var("KRKNC_TEXTFILE_GET_INTERVAL_SEC").unwrap_or("10".to_string()).parse::<u64>().unwrap(),
+                monitoring_mode: env::var("KRKNC_TEXTFILE_MONITORING_MODE").unwrap_or("time_interval".to_string()),
+                allow_create: env::var("KRKNC_TEXTFILE_ALLOW_CREATE").unwrap_or("true".to_string()).parse::<bool>().unwrap(),
+                allow_modify: env::var("KRKNC_TEXTFILE_ALLOW_MODIFY").unwrap_or("true".to_string()).parse::<bool>().unwrap(),
+                remove_created: env::var("KRKNC_TEXTFILE_REMOVE_CREATED_FILE_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
+                remove_except_modified: env::var("KRKNC_TEXTFILE_REMOVE_FILES_EXCEPT_MODIFIED_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
+                remove_all_files: env::var("KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
+                remove_all_folder: env::var("KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
             },
         }
     }

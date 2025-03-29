@@ -6,6 +6,7 @@ use crate::{
         websocket::WebsocketFactory,
         ibeacon::IbeaconFactory,
         serial::SerialFactory,
+        textfile::TextfileFactory,
     },
     config::CollectorCfg
 };
@@ -18,6 +19,7 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
         Box::new(WebsocketFactory::new(config.clone())),
         Box::new(IbeaconFactory::new(config.clone())),
         Box::new(SerialFactory::new(config.clone())),
+        Box::new(TextfileFactory::new(config.clone())),
     ];
 
     let mut handles = Vec::new();
