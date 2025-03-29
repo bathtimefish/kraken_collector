@@ -77,8 +77,38 @@ fn is_hidden(path: &Path) -> Result<bool> {
     }
 }
 
-// ファイル操作関数
-async fn read_file_from_path(path: &Path, event_type: &str, config: &TfcConfig) -> Result<(), anyhow::Error> {
+// Function to execute gRPC send in a separate thread
+fn send_to_broker(grpc_config: &GrpcCfg, collector_name: &str, content_type: &str, metadata: &str, payload: &[u8]) {
+    let grpc_config = grpc_config.clone();
+    let collector_name = collector_name.to_string();
+    let content_type = content_type.to_string();
+    let metadata = metadata.to_string();
+    let payload = payload.to_vec();
+    
+    // Create and run Tokio runtime in a separate thread
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to create Tokio runtime");
+        
+        rt.block_on(async {
+            match grpc::send(
+                &grpc_config,
+                &collector_name,
+                &content_type,
+                &metadata,
+                &payload,
+            ).await {
+                Ok(_) => debug!("File content sent to Kraken Broker"),
+                Err(e) => error!("Failed to send file content: {}", e),
+            }
+        });
+    });
+}
+
+// File operation function
+fn read_file_from_path(path: &Path, event_type: &str, config: &TfcConfig) -> Result<(), anyhow::Error> {
     if is_hidden(path)? {
         debug!("Hidden file was not opened: {:?}", path);
         bail!("Hidden file");
@@ -90,23 +120,15 @@ async fn read_file_from_path(path: &Path, event_type: &str, config: &TfcConfig) 
 
     // send to Kraken Broker
     let meta_json = json!({});
-    let sent = grpc::send(
+    send_to_broker(
         &config.grpc,
         "textfile",
         "text/plain",
         &serde_json::to_string(&meta_json).unwrap(),
         &result.as_bytes(),
-    ).await;
+    );
 
-    match sent {
-        Ok(_) => {
-            debug!("File content sent to Kraken Broker");
-            Ok(())
-        },
-        Err(e) => {
-            Err(anyhow::Error::msg(format!("Failed to send file content: {}", e)))
-        },
-    }
+    Ok(())
 }
 
 enum CleanupStrategy {
@@ -163,7 +185,7 @@ fn clean_directory(folder_path: &Path, strategy: CleanupStrategy) -> Result<()> 
                             .with_context(|| format!("Failed to remove file: {}", path.display()))?;
                         debug!("Deleted file: {:?}", &path);
                     } else {
-                        debug!("Keeped file: {:?}", &path);
+                        debug!("Kept file: {:?}", &path);
                     }
                 }
             },
@@ -184,11 +206,11 @@ fn clean_directory(folder_path: &Path, strategy: CleanupStrategy) -> Result<()> 
 }
 
 // Dispatch event
-async fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Result<()> {
+fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Result<()> {
     debug!("Processing event: {}", event_type);
     
     // Read file content
-    let _ = read_file_from_path(path, event_type, config).await 
+    let _ = read_file_from_path(path, event_type, config)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
     
     // Determine cleanup strategy 
@@ -199,8 +221,8 @@ async fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Re
             if config.cleanup_options.remove_all_files_after_read {
                 debug!("Remove all files in {:?}", config.monitor_dir_path);
                 
-                // thread::sleepの代わりにtokio::time::sleepを使用
-                tokio::time::sleep(Duration::from_secs(1)).await;
+                // Add delay to ensure file operations are complete
+                thread::sleep(Duration::from_secs(1));
                 
                 clean_directory(
                     &config.monitor_dir_path,
@@ -212,7 +234,7 @@ async fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Re
                 )?;
             } else if config.cleanup_options.remove_created_file_after_read {
                 // Delete created file after reading
-                tokio::time::sleep(Duration::from_secs(1)).await;
+                thread::sleep(Duration::from_secs(1));
                 debug!("Remove created file after reading {:?}", path);
                 std::fs::remove_file(path)
                     .with_context(|| format!("Failed to remove file: {}", path.display()))?;
@@ -222,7 +244,7 @@ async fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Re
             debug!("Modified file has closed.");
             if config.cleanup_options.remove_all_files_after_read {
                 // Delete all files after reading
-                tokio::time::sleep(Duration::from_secs(1)).await;
+                thread::sleep(Duration::from_secs(1));
                 debug!("Remove all files in {:?}", config.monitor_dir_path);
                 
                 clean_directory(
@@ -259,10 +281,6 @@ fn monitor_by_time_interval(config: &TfcConfig) -> Result<()> {
     debug!("Start to monitor file by time interval: {}", config.target_file_path.display());
     debug!("Interval: {} seconds", config.interval_sec);
     
-    // Tokio runtimeを作成
-    let rt = tokio::runtime::Runtime::new()
-        .expect("Failed to create Tokio runtime");
-    
     // main loop 
     loop {
         match read_file_content(&config.target_file_path) {
@@ -270,23 +288,15 @@ fn monitor_by_time_interval(config: &TfcConfig) -> Result<()> {
                 debug!("Detected file content:");
                 debug!("---\n{}\n---", content);
                 
-                // Kraken Brokerにデータを送信
-                let config_clone = config.clone();
-                let content_clone = content.clone();
-                
-                rt.block_on(async {
-                    let meta_json = json!({});
-                    match grpc::send(
-                        &config_clone.grpc,
-                        "textfile",
-                        "text/plain",
-                        &serde_json::to_string(&meta_json).unwrap(),
-                        &content_clone.as_bytes(),
-                    ).await {
-                        Ok(_) => debug!("File content sent to Kraken Broker (time_interval mode)"),
-                        Err(e) => error!("Failed to send file content: {}", e),
-                    }
-                });
+                // Send data to Kraken Broker
+                let meta_json = json!({});
+                send_to_broker(
+                    &config.grpc,
+                    "textfile",
+                    "text/plain",
+                    &serde_json::to_string(&meta_json).unwrap(),
+                    &content.as_bytes(),
+                );
             }
             Err(err) => {
                 error!("Failed to read the file: {}", err);
@@ -371,25 +381,19 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                                 let paths = paths.clone();
                                 let event_type = current_event_type.clone();
                                 
-                                // 重要: ここでtokio::spawnを使用するが、非同期コンテキスト内でthread::sleepを使わない
-                                let rt = tokio::runtime::Runtime::new()
-                                    .expect("Failed to create Tokio runtime");
+                                // Add delay to wait for file to be completely closed
+                                thread::sleep(Duration::from_secs(1));
                                 
-                                rt.block_on(async {
-                                    // thread::sleepの代わりにtokio::time::sleepを使用
-                                    tokio::time::sleep(Duration::from_secs(1)).await;
-                                    
-                                    for path in &paths {
-                                        if let Ok(false) = is_hidden(path) {
-                                            debug!("Processing Close event for path: {}", path.display());
-                                            if let Err(e) = dispatch_event(&config, path, &event_type).await {
-                                                error!("Failed to dispatch event for path: {}: {}", path.display(), e);
-                                            } else {
-                                                debug!("Successfully dispatched event for path: {}", path.display());
-                                            }
+                                for path in &paths {
+                                    if let Ok(false) = is_hidden(path) {
+                                        debug!("Processing Close event for path: {}", path.display());
+                                        if let Err(e) = dispatch_event(&config, path, &event_type) {
+                                            error!("Failed to dispatch event for path: {}: {}", path.display(), e);
+                                        } else {
+                                            debug!("Successfully dispatched event for path: {}", path.display());
                                         }
                                     }
-                                });
+                                }
                                 
                                 current_event_type = "unknown".to_string();
                             },
