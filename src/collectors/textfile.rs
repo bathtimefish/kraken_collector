@@ -309,10 +309,6 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                                     if let Ok(false) = is_hidden(path) {
                                         debug!("Create File event detected");
                                         current_event_type = "create".to_string();
-                                        debug!("Created file: {:?}", path);
-                                        debug!("Event Type: {:?}", current_event_type);
-                                        let _ = dispatch_event(config, path, &current_event_type); // ! async function
-                                        current_event_type = "unknown".to_string();
                                     }
                                 }
                             },
@@ -339,10 +335,6 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                                     if let Ok(false) = is_hidden(path) {
                                         debug!("Modify Data event detected");
                                         current_event_type = "modify".to_string();
-                                        debug!("Modified file: {:?}", path);
-                                        debug!("Event Type: {:?}", current_event_type);
-                                        let _ = dispatch_event(config, path, &current_event_type); // ! async function
-                                        current_event_type = "unknown".to_string();
                                     }
                                 }
                             },
@@ -352,13 +344,20 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                     EventKind::Access(access_kind) => {
                         match access_kind {
                             AccessKind::Close(_) => {
-                                thread::sleep(Duration::from_secs(1));
-                                for path in &paths {
-                                    if let Ok(false) = is_hidden(path) {
-                                        let _ = dispatch_event(config, path, &current_event_type); // ! async function
-                                        current_event_type = "unknown".to_string();
+                                let config = config.clone();
+                                let paths = paths.clone();
+                                let event_type = current_event_type.clone();
+                                tokio::spawn(async move {
+                                    thread::sleep(Duration::from_secs(1));
+                                    for path in &paths {
+                                        if let Ok(false) = is_hidden(path) {
+                                            if let Err(e) = dispatch_event(&config, path, &event_type).await {
+                                                error!("Failed to dispatch event for path: {}: {}", path.display(), e);
+                                            }
+                                        }
                                     }
-                                }
+                                });
+                                current_event_type = "unknown".to_string();
                             },
                             _ => {}
                         }
