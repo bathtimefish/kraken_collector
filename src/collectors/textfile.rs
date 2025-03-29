@@ -309,6 +309,10 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                                     if let Ok(false) = is_hidden(path) {
                                         debug!("Create File event detected");
                                         current_event_type = "create".to_string();
+                                        debug!("Created file: {:?}", path);
+                                        debug!("Event Type: {:?}", current_event_type);
+                                        let _ = dispatch_event(config, path, &current_event_type); // ! async function
+                                        current_event_type = "unknown".to_string();
                                     }
                                 }
                             },
@@ -335,6 +339,10 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                                     if let Ok(false) = is_hidden(path) {
                                         debug!("Modify Data event detected");
                                         current_event_type = "modify".to_string();
+                                        debug!("Modified file: {:?}", path);
+                                        debug!("Event Type: {:?}", current_event_type);
+                                        let _ = dispatch_event(config, path, &current_event_type); // ! async function
+                                        current_event_type = "unknown".to_string();
                                     }
                                 }
                             },
