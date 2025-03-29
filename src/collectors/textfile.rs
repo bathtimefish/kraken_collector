@@ -199,7 +199,8 @@ async fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Re
             if config.cleanup_options.remove_all_files_after_read {
                 debug!("Remove all files in {:?}", config.monitor_dir_path);
                 
-                thread::sleep(Duration::from_secs(1));
+                // thread::sleepの代わりにtokio::time::sleepを使用
+                tokio::time::sleep(Duration::from_secs(1)).await;
                 
                 clean_directory(
                     &config.monitor_dir_path,
@@ -211,7 +212,7 @@ async fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Re
                 )?;
             } else if config.cleanup_options.remove_created_file_after_read {
                 // Delete created file after reading
-                thread::sleep(Duration::from_secs(1));
+                tokio::time::sleep(Duration::from_secs(1)).await;
                 debug!("Remove created file after reading {:?}", path);
                 std::fs::remove_file(path)
                     .with_context(|| format!("Failed to remove file: {}", path.display()))?;
@@ -221,7 +222,7 @@ async fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Re
             debug!("Modified file has closed.");
             if config.cleanup_options.remove_all_files_after_read {
                 // Delete all files after reading
-                thread::sleep(Duration::from_secs(1));
+                tokio::time::sleep(Duration::from_secs(1)).await;
                 debug!("Remove all files in {:?}", config.monitor_dir_path);
                 
                 clean_directory(
@@ -258,12 +259,34 @@ fn monitor_by_time_interval(config: &TfcConfig) -> Result<()> {
     debug!("Start to monitor file by time interval: {}", config.target_file_path.display());
     debug!("Interval: {} seconds", config.interval_sec);
     
+    // Tokio runtimeを作成
+    let rt = tokio::runtime::Runtime::new()
+        .expect("Failed to create Tokio runtime");
+    
     // main loop 
     loop {
         match read_file_content(&config.target_file_path) {
             Ok(content) => {
                 debug!("Detected file content:");
                 debug!("---\n{}\n---", content);
+                
+                // Kraken Brokerにデータを送信
+                let config_clone = config.clone();
+                let content_clone = content.clone();
+                
+                rt.block_on(async {
+                    let meta_json = json!({});
+                    match grpc::send(
+                        &config_clone.grpc,
+                        "textfile",
+                        "text/plain",
+                        &serde_json::to_string(&meta_json).unwrap(),
+                        &content_clone.as_bytes(),
+                    ).await {
+                        Ok(_) => debug!("File content sent to Kraken Broker (time_interval mode)"),
+                        Err(e) => error!("Failed to send file content: {}", e),
+                    }
+                });
             }
             Err(err) => {
                 error!("Failed to read the file: {}", err);
@@ -347,16 +370,27 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                                 let config = config.clone();
                                 let paths = paths.clone();
                                 let event_type = current_event_type.clone();
-                                tokio::spawn(async move {
-                                    thread::sleep(Duration::from_secs(1));
+                                
+                                // 重要: ここでtokio::spawnを使用するが、非同期コンテキスト内でthread::sleepを使わない
+                                let rt = tokio::runtime::Runtime::new()
+                                    .expect("Failed to create Tokio runtime");
+                                
+                                rt.block_on(async {
+                                    // thread::sleepの代わりにtokio::time::sleepを使用
+                                    tokio::time::sleep(Duration::from_secs(1)).await;
+                                    
                                     for path in &paths {
                                         if let Ok(false) = is_hidden(path) {
+                                            debug!("Processing Close event for path: {}", path.display());
                                             if let Err(e) = dispatch_event(&config, path, &event_type).await {
                                                 error!("Failed to dispatch event for path: {}: {}", path.display(), e);
+                                            } else {
+                                                debug!("Successfully dispatched event for path: {}", path.display());
                                             }
                                         }
                                     }
                                 });
+                                
                                 current_event_type = "unknown".to_string();
                             },
                             _ => {}
