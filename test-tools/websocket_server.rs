@@ -1,46 +1,79 @@
-extern crate websocket;
+use tokio::net::{TcpListener, TcpStream};
+use tokio_tungstenite::{accept_async, tungstenite::Message};
+use futures::{SinkExt, StreamExt};
+use std::net::SocketAddr;
 
-use std::thread;
-use websocket::sync::Server;
-use websocket::OwnedMessage;
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let listener = TcpListener::bind("127.0.0.1:2794").await?;
+    println!("WebSocket test server listening on ws://127.0.0.1:2794");
 
-fn main() {
-	let server = Server::bind("127.0.0.1:2794").unwrap();
+    while let Ok((stream, addr)) = listener.accept().await {
+        tokio::spawn(handle_connection(stream, addr));
+    }
 
-	for request in server.filter_map(Result::ok) {
-		// Spawn a new thread for each connection.
-		thread::spawn(|| {
-			let mut client = request.use_protocol("rust-websocket").accept().unwrap();
+    Ok(())
+}
 
-			let ip = client.peer_addr().unwrap();
+async fn handle_connection(stream: TcpStream, addr: SocketAddr) {
+    println!("New connection from {}", addr);
 
-			println!("Connection from {}", ip);
+    let ws_stream = match accept_async(stream).await {
+        Ok(ws) => ws,
+        Err(e) => {
+            println!("Error accepting WebSocket connection from {}: {}", addr, e);
+            return;
+        }
+    };
 
-			let message = OwnedMessage::Text("Hello".to_string());
-			client.send_message(&message).unwrap();
+    let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
-			let (mut receiver, mut sender) = client.split().unwrap();
+    // Send initial hello message
+    if let Err(e) = ws_sender.send(Message::Text("Hello".to_string().into())).await {
+        println!("Error sending hello message to {}: {}", addr, e);
+        return;
+    }
 
-			for message in receiver.incoming_messages() {
-				let message = message.unwrap();
+    while let Some(msg) = ws_receiver.next().await {
+        match msg {
+            Ok(Message::Text(text)) => {
+                println!("Received text from {}: {}", addr, text);
+                // Echo the message back
+                if let Err(e) = ws_sender.send(Message::Text(format!("Echo: {}", text).into())).await {
+                    println!("Error sending echo to {}: {}", addr, e);
+                    break;
+                }
+            }
+            Ok(Message::Binary(data)) => {
+                println!("Received binary from {} ({} bytes)", addr, data.len());
+                // Echo the binary data back
+                if let Err(e) = ws_sender.send(Message::Binary(data)).await {
+                    println!("Error sending binary echo to {}: {}", addr, e);
+                    break;
+                }
+            }
+            Ok(Message::Ping(ping_data)) => {
+                println!("Received ping from {}", addr);
+                if let Err(e) = ws_sender.send(Message::Pong(ping_data)).await {
+                    println!("Error sending pong to {}: {}", addr, e);
+                    break;
+                }
+            }
+            Ok(Message::Pong(_)) => {
+                println!("Received pong from {}", addr);
+            }
+            Ok(Message::Close(_)) => {
+                println!("Connection closed by client {}", addr);
+                let _ = ws_sender.send(Message::Close(None)).await;
+                break;
+            }
+            Err(e) => {
+                println!("Error receiving message from {}: {}", addr, e);
+                break;
+            }
+            _ => {}
+        }
+    }
 
-				match message {
-					OwnedMessage::Close(_) => {
-						let message = OwnedMessage::Close(None);
-						sender.send_message(&message).unwrap();
-						println!("Client {} disconnected", ip);
-						return;
-					}
-					OwnedMessage::Ping(ping) => {
-						let message = OwnedMessage::Pong(ping);
-						sender.send_message(&message).unwrap();
-					}
-					OwnedMessage::Text(text) => {
-						println!("Received text: {}", text);
-					}
-					_ => sender.send_message(&message).unwrap(),
-				}
-			}
-		});
-	}
+    println!("Connection with {} ended", addr);
 }
