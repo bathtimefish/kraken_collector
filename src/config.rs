@@ -20,7 +20,6 @@ pub struct MqttCfg {
 pub struct WebsocketCfg {
     pub enable: bool,
     pub host: String,
-    pub sub_protocol: String,
 }
 
 #[derive (Clone, Debug)]
@@ -115,7 +114,6 @@ impl Default for CollectorCfg {
             websocket: WebsocketCfg {
                 enable: websocket_enable,
                 host: env::var("KRKNC_WEBSOCKET_HOST").unwrap_or("127.0.0.1:2794".to_string()),
-                sub_protocol: env::var("KRKNC_WEBSOCKET_SUB_PROTOCOL").unwrap_or("kraken-ws".to_string()),
             },
             ibeacon: IbeaconCfg {
                 enable: ibeacon_enable,

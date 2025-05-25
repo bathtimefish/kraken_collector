@@ -10,7 +10,7 @@ pub mod kraken {
   tonic::include_proto!("kraken");
 }
 
-pub async fn send(config: &GrpcCfg, collector_name:&str, content_type:&str, metadata: &str, payload: &[u8]) -> Result<Response<KrakenResponse>, Box<dyn std::error::Error>> {
+pub async fn send(config: &GrpcCfg, collector_name:&str, content_type:&str, metadata: &str, payload: &[u8]) -> Result<Response<KrakenResponse>, Box<dyn std::error::Error + Send + Sync>> {
   let dst = config.host.clone().parse::<Uri>().unwrap();
   let mut client = KrakenServiceClient::connect(dst).await?;
   let request = tonic::Request::new(KrakenRequest {
