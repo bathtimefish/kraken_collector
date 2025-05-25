@@ -1,128 +1,91 @@
-extern crate websocket;
+use tokio_tungstenite::{connect_async, tungstenite::Message};
+use futures::{SinkExt, StreamExt};
+use tokio::io::{self, AsyncBufReadExt, BufReader};
+use std::io::{self as std_io, Write};
 
-use std::io::stdin;
-use std::sync::mpsc::channel;
-use std::thread;
+const CONNECTION: &str = "ws://127.0.0.1:2794";
 
-use websocket::client::ClientBuilder;
-use websocket::{Message, OwnedMessage};
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Connecting to {}", CONNECTION);
 
-const CONNECTION: &'static str = "ws://127.0.0.1:2794";
+    let (ws_stream, _) = connect_async(CONNECTION).await?;
+    println!("Successfully connected");
 
-fn main() {
-	println!("Connecting to {}", CONNECTION);
+    let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
-	let client = ClientBuilder::new(CONNECTION)
-		.unwrap()
-		.add_protocol("kraken-ws")
-		.connect_insecure()
-		.unwrap();
+    // Spawn task for receiving messages
+    let receive_task = tokio::spawn(async move {
+        while let Some(msg) = ws_receiver.next().await {
+            match msg {
+                Ok(Message::Text(text)) => {
+                    println!("Received text: {}", text);
+                }
+                Ok(Message::Binary(data)) => {
+                    println!("Received binary: {} bytes", data.len());
+                }
+                Ok(Message::Ping(data)) => {
+                    println!("Received ping: {:?}", data);
+                }
+                Ok(Message::Pong(data)) => {
+                    println!("Received pong: {:?}", data);
+                }
+                Ok(Message::Close(_)) => {
+                    println!("Connection closed by server");
+                    break;
+                }
+                Err(e) => {
+                    println!("Error receiving message: {}", e);
+                    break;
+                }
+                _ => {}
+            }
+        }
+    });
 
-	println!("Successfully connected");
+    // Handle user input
+    let stdin = io::stdin();
+    let mut reader = BufReader::new(stdin);
+    let mut line = String::new();
 
-	let (mut receiver, mut sender) = client.split().unwrap();
+    println!("Enter messages (type '/close' to exit, '/ping' to send ping):");
+    print!("> ");
+    std_io::stdout().flush().unwrap();
 
-	let (tx, rx) = channel();
+    loop {
+        line.clear();
+        match reader.read_line(&mut line).await {
+            Ok(0) => break, // EOF
+            Ok(_) => {
+                let trimmed = line.trim();
+                
+                let message = match trimmed {
+                    "/close" => {
+                        let _ = ws_sender.send(Message::Close(None)).await;
+                        break;
+                    }
+                    "/ping" => Message::Ping(b"PING".to_vec().into()),
+                    _ => Message::Text(trimmed.to_string().into()),
+                };
 
-	let tx_1 = tx.clone();
+                if let Err(e) = ws_sender.send(message).await {
+                    println!("Error sending message: {}", e);
+                    break;
+                }
+                
+                print!("> ");
+                std_io::stdout().flush().unwrap();
+            }
+            Err(e) => {
+                println!("Error reading input: {}", e);
+                break;
+            }
+        }
+    }
 
-	let send_loop = thread::spawn(move || {
-		loop {
-			// Send loop
-			let message = match rx.recv() {
-				Ok(m) => m,
-				Err(e) => {
-					println!("Send Loop: {:?}", e);
-					return;
-				}
-			};
-			match message {
-				OwnedMessage::Close(_) => {
-					let _ = sender.send_message(&message);
-					// If it's a close message, just send it and then return.
-					return;
-				}
-				_ => (),
-			}
-			// Send the message
-			match sender.send_message(&message) {
-				Ok(()) => (),
-				Err(e) => {
-					println!("Send Loop: {:?}", e);
-					let _ = sender.send_message(&Message::close());
-					return;
-				}
-			}
-		}
-	});
-
-	let receive_loop = thread::spawn(move || {
-		// Receive loop
-		for message in receiver.incoming_messages() {
-			let message = match message {
-				Ok(m) => m,
-				Err(e) => {
-					println!("Receive Loop: {:?}", e);
-					let _ = tx_1.send(OwnedMessage::Close(None));
-					return;
-				}
-			};
-			match message {
-				OwnedMessage::Close(_) => {
-					// Got a close message, so send a close message and return
-					let _ = tx_1.send(OwnedMessage::Close(None));
-					return;
-				}
-				OwnedMessage::Ping(data) => {
-					match tx_1.send(OwnedMessage::Pong(data)) {
-						// Send a pong in response
-						Ok(()) => (),
-						Err(e) => {
-							println!("Receive Loop: {:?}", e);
-							return;
-						}
-					}
-				}
-				// Say what we received
-				_ => println!("Receive Loop: {:?}", message),
-			}
-		}
-	});
-
-	loop {
-		let mut input = String::new();
-
-		stdin().read_line(&mut input).unwrap();
-
-		let trimmed = input.trim();
-
-		let message = match trimmed {
-			"/close" => {
-				// Close the connection
-				let _ = tx.send(OwnedMessage::Close(None));
-				break;
-			}
-			// Send a ping
-			"/ping" => OwnedMessage::Ping(b"PING".to_vec()),
-			// Otherwise, just send text
-			_ => OwnedMessage::Text(trimmed.to_string()),
-		};
-
-		match tx.send(message) {
-			Ok(()) => (),
-			Err(e) => {
-				println!("Main Loop: {:?}", e);
-				break;
-			}
-		}
-	}
-
-	// We're exiting
-
-	println!("Waiting for child threads to exit");
-
-	let _ = send_loop.join();
-	let _ = receive_loop.join();
-
-	println!("Exited");
+    // Wait for receive task to complete
+    let _ = receive_task.await;
+    println!("Exited");
+    
+    Ok(())
 }
