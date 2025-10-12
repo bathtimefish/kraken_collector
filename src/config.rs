@@ -54,6 +54,12 @@ pub struct TextFileCfg {
 }
 
 #[derive (Clone, Debug)]
+pub struct CameraCfg {
+    pub enable: bool,
+    pub capture_interval_sec: u64,
+}
+
+#[derive (Clone, Debug)]
 pub struct GrpcCfg {
     pub host: String,
 }
@@ -68,6 +74,7 @@ pub struct CollectorCfg {
     pub ibeacon: IbeaconCfg,
     pub serial: SerialCfg,
     pub text_file: TextFileCfg,
+    pub camera: CameraCfg,
 }
 
 impl Default for CollectorCfg {
@@ -78,6 +85,7 @@ impl Default for CollectorCfg {
         let mut ibeacon_enable = false;
         let mut serial_enable = false;
         let mut textfile_enable = false;
+        let mut camera_enable = false;
         if env::var("KRKNC_WEBHOOK_PATH").is_ok() {
             webhook_enable = true;
         }
@@ -95,6 +103,9 @@ impl Default for CollectorCfg {
         }
         if env::var("KRKNC_TEXTFILE_MONITOR_DIR_PATH").is_ok() {
             textfile_enable = true;
+        }
+        if env::var("KRKNC_CAMERA_CAPTURE_INTERVAL_SEC").is_ok() {
+            camera_enable = true;
         }
         CollectorCfg {
             grpc: GrpcCfg {
@@ -139,6 +150,10 @@ impl Default for CollectorCfg {
                 remove_except_modified: env::var("KRKNC_TEXTFILE_REMOVE_FILES_EXCEPT_MODIFIED_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
                 remove_all_files: env::var("KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
                 remove_all_folder: env::var("KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
+            },
+            camera: CameraCfg {
+                enable: camera_enable,
+                capture_interval_sec: env::var("KRKNC_CAMERA_CAPTURE_INTERVAL_SEC").unwrap_or("5".to_string()).parse::<u64>().unwrap(),
             },
         }
     }
