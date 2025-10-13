@@ -13,7 +13,8 @@ use crate::config::CollectorCfg;
 struct MetaData {
     format: String,
     camera_name: String,
-    camera_index: String,
+    width: u32,
+    height: u32,
 }
 
 pub struct CameraCollector {
@@ -68,12 +69,18 @@ impl Collector for CameraCollector {
         camera.open_stream()
             .map_err(|e| anyhow::anyhow!("Failed to open camera stream: {}", e))?;
 
+        // Get camera format information after stream is opened
+        let camera_format = camera.camera_format();
+        
+        let width = camera_format.width();
+        let height = camera_format.height();
+        
+        debug!("Camera format: {}x{}", width, height);
         debug!("Camera initialized successfully, starting capture loop...");
         debug!("Capture interval: {} seconds", self.config.camera.capture_interval_sec);
 
         // Store camera info for use in the loop
         let camera_name = camera_info.human_name().to_string();
-        let camera_index = format!("{:?}", camera_info.index());
 
         loop {
             match camera.frame() {
@@ -91,7 +98,8 @@ impl Collector for CameraCollector {
                             let metadata = MetaData {
                                 format: "image/jpeg".to_string(),
                                 camera_name: camera_name.clone(),
-                                camera_index: camera_index.clone(),
+                                width,
+                                height,
                             };
                             let meta_json = json!(metadata);
                             
