@@ -7,6 +7,7 @@ use crate::{
         ibeacon::IbeaconFactory,
         serial::SerialFactory,
         textfile::TextfileFactory,
+        camera::CameraFactory,
     },
     config::CollectorCfg
 };
@@ -20,6 +21,7 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
         Box::new(IbeaconFactory::new(config.clone())),
         Box::new(SerialFactory::new(config.clone())),
         Box::new(TextfileFactory::new(config.clone())),
+        Box::new(CameraFactory::new(config.clone())),
     ];
 
     let mut handles = Vec::new();
