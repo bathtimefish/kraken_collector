@@ -1,6 +1,6 @@
 [package]
 name = "kraken_collector"
-version = "2.2.2"
+version = "2.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -63,6 +63,7 @@ notify = "8.0.0"
 notify-debouncer-full = "0.5.0"
 notify-types = "2.0.0"
 hf = "0.3.6"
+nokhwa = { version = "0.10.9", features = ["input-native"] }
 
 [build-dependencies]
 #tonic-build = { version = "0.8.4", features = ["prost"]}
