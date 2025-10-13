@@ -83,9 +83,21 @@ impl Collector for CameraCollector {
         let camera_name = camera_info.human_name().to_string();
 
         loop {
+            // Skip buffered frames to get the most recent frame
+            debug!("Capturing fresh frame...");
+            for i in 0..3 {
+                match camera.frame() {
+                    Ok(_) => debug!("Skipped buffered frame {}", i + 1),
+                    Err(e) => debug!("Error skipping frame {}: {}", i + 1, e),
+                }
+                // Small delay between frame reads
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            
+            // Get the actual frame to process
             match camera.frame() {
                 Ok(frame) => {
-                    debug!("Frame captured successfully");
+                    debug!("Fresh frame captured successfully");
                     
                     // Decode frame to RGB format
                     match frame.decode_image::<RgbFormat>() {
