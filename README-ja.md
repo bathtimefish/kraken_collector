@@ -24,11 +24,15 @@ Krakenの各機能は、私がIoTシステムを開発してきた中で利用�
 今までIoTが行き届いていなかった業務に対して、Krakenがそのメリットを届けられることを期待しています。
 
 # Kraken Collector
-[Kraken Collector](https://github.com/bathtimefish/kraken_collector)はエッジIoTセンサからデータを収集するためのアプリケーションで、IoTセンサが一般的によく利用する3つのプロトコルをサポートしています。
+[Kraken Collector](https://github.com/bathtimefish/kraken_collector)はエッジIoTセンサからデータを収集するためのアプリケーションで、複数の通信プロトコルとデータソースをサポートしています。
 
-HTTP Webhooks
-MQTT
-Websocket
+- HTTP Webhooks
+- MQTT
+- Websocket
+- iBeacon (Bluetooth Low Energy)
+- Serial Communication（シリアル通信）
+- TextFile Monitoring（テキストファイル監視）
+- Camera（USBカメラキャプチャ）
 
 もしあなたの仕事に他のプロトコルが必要な場合、新しい[collector](https://github.com/bathtimefish/kraken_collector/tree/main/src/collectors)を開発することでKraken Collectorを拡張することができます。
 
@@ -119,6 +123,23 @@ Collectorの機能は環境変数で設定します。現在以下の環境変�
 - `KRKNC_MQTT_CONFIG_PATH`
 - `KRKNC_WEBSOCKET_HOST`
 - `KRKNC_WEBSOCKET_SUB_PROTOCOL`
+- `KRKNC_IBEACON_FILTER_DURATION_SEC`
+- `KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH`
+- `KRKNC_SERIAL_DEVICE_NAME`
+- `KRKNC_SERIAL_PORT`
+- `KRKNC_SERIAL_BAUDRATE`
+- `KRKNC_SERIAL_TIMEOUT_SEC`
+- `KRKNC_TEXTFILE_TARGET_FILE_PATH`
+- `KRKNC_TEXTFILE_MONITOR_DIR_PATH`
+- `KRKNC_TEXTFILE_GET_INTERVAL_SEC`
+- `KRKNC_TEXTFILE_MONITORING_MODE`
+- `KRKNC_TEXTFILE_ALLOW_CREATE`
+- `KRKNC_TEXTFILE_ALLOW_MODIFY`
+- `KRKNC_TEXTFILE_REMOVE_CREATED_FILE_AFTER_READ`
+- `KRKNC_TEXTFILE_REMOVE_FILES_EXCEPT_MODIFIED_AFTER_READ`
+- `KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ`
+- `KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ`
+- `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`
 
 ## for Broker
 ## KRKNC_BROKER_HOST
@@ -157,3 +178,65 @@ KRKNC_WEBSOCKET_HOST=0.0.0.0:2794
 ```
 ### KRKNC_WEBSOCKET_SUB_PROTOCOL
 Websocket Serverのサブプロトコル名を指定します。
+
+## iBeacon
+iBeacon機能は `KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH` を設定することで利用可能となります。
+### KRKNC_IBEACON_FILTER_DURATION_SEC
+重複したビーコン検出を防ぐためのフィルタ期間を秒単位で設定します。
+### KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH
+フィルタリング用の許可されたビーコンUUIDを含むYAMLファイルのパスを指定します。
+
+## シリアル通信
+シリアル通信機能は `KRKNC_SERIAL_DEVICE_NAME` を設定することで利用可能となります。
+### KRKNC_SERIAL_DEVICE_NAME
+シリアルデバイスの説明的な名前を設定します。
+### KRKNC_SERIAL_PORT
+シリアルポートのパスを指定します。多くの場合、次のような設定で良いはずです。
+```bash
+KRKNC_SERIAL_PORT=/dev/ttyACM0
+```
+### KRKNC_SERIAL_BAUDRATE
+シリアル通信のボーレートを設定します（デフォルト: 9600）。
+### KRKNC_SERIAL_TIMEOUT_SEC
+シリアル読み取り操作のタイムアウトを秒単位で指定します。
+
+## テキストファイル監視
+テキストファイル監視機能は `KRKNC_TEXTFILE_MONITOR_DIR_PATH` を設定することで利用可能となります。
+
+### KRKNC_TEXTFILE_TARGET_FILE_PATH
+読み取り対象のファイルパスを指定します（デフォルト: "data/data.txt"）。
+
+### KRKNC_TEXTFILE_MONITOR_DIR_PATH
+ファイル変更を監視するディレクトリパスを指定します（デフォルト: "data/"）。
+
+### KRKNC_TEXTFILE_GET_INTERVAL_SEC
+時間ベースの監視の間隔を秒単位で設定します（デフォルト: 10）。
+
+### KRKNC_TEXTFILE_MONITORING_MODE
+監視モードを設定します: "time_interval" または "event_driven"（デフォルト: "time_interval"）。
+
+### KRKNC_TEXTFILE_ALLOW_CREATE
+ファイル作成イベントの監視を有効にします（デフォルト: true）。
+
+### KRKNC_TEXTFILE_ALLOW_MODIFY
+ファイル更新イベントの監視を有効にします（デフォルト: true）。
+
+### KRKNC_TEXTFILE_REMOVE_CREATED_FILE_AFTER_READ
+作成されたファイルを読み取り後に削除します（デフォルト: false）。
+
+### KRKNC_TEXTFILE_REMOVE_FILES_EXCEPT_MODIFIED_AFTER_READ
+読み取り後に変更されたファイル以外をすべて削除します（デフォルト: false）。
+
+### KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ
+読み取り後にすべてのファイルを削除します（デフォルト: false）。
+
+### KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ
+読み取り後にフォルダ全体を削除します（デフォルト: false）。
+
+## Camera
+Camera機能は `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC` を設定することで利用可能となります。
+### KRKNC_CAMERA_CAPTURE_INTERVAL_SEC
+次のようにカメラスナップショットの間隔を秒単位で設定します。
+```bash
+KRKNC_CAMERA_CAPTURE_INTERVAL_SEC=5
+```

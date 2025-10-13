@@ -22,11 +22,15 @@ The features of Kraken were selected from the most frequently used functions and
 I hope Kraken can deliver its benefits to areas where IoT has yet to reach.
 
 # Kraken Collector
-[Kraken Collector](https://github.com/bathtimefish/kraken_collector) is an application for collecting data from edge IoT sensors and supports three common protocols.
+[Kraken Collector](https://github.com/bathtimefish/kraken_collector) is an application for collecting data from edge IoT sensors and supports multiple communication protocols and data sources.
 
 - HTTP Webhooks
 - MQTT
 - Websocket
+- iBeacon (Bluetooth Low Energy)
+- Serial Communication
+- TextFile Monitoring
+- Camera (USB Camera Capture)
 
 If your work requires other protocols, you can extend Kraken Collector by developing a new [collector](https://github.com/bathtimefish/kraken_collector/tree/main/src/collectors).
 
@@ -112,6 +116,23 @@ The functionality of the collector is configured through environment variables. 
 - `KRKNC_MQTT_CONFIG_PATH`
 - `KRKNC_WEBSOCKET_HOST`
 - `KRKNC_WEBSOCKET_SUB_PROTOCOL`
+- `KRKNC_IBEACON_FILTER_DURATION_SEC`
+- `KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH`
+- `KRKNC_SERIAL_DEVICE_NAME`
+- `KRKNC_SERIAL_PORT`
+- `KRKNC_SERIAL_BAUDRATE`
+- `KRKNC_SERIAL_TIMEOUT_SEC`
+- `KRKNC_TEXTFILE_TARGET_FILE_PATH`
+- `KRKNC_TEXTFILE_MONITOR_DIR_PATH`
+- `KRKNC_TEXTFILE_GET_INTERVAL_SEC`
+- `KRKNC_TEXTFILE_MONITORING_MODE`
+- `KRKNC_TEXTFILE_ALLOW_CREATE`
+- `KRKNC_TEXTFILE_ALLOW_MODIFY`
+- `KRKNC_TEXTFILE_REMOVE_CREATED_FILE_AFTER_READ`
+- `KRKNC_TEXTFILE_REMOVE_FILES_EXCEPT_MODIFIED_AFTER_READ`
+- `KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ`
+- `KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ`
+- `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`
 
 ## for Broker
 ### KRKNC_BROKER_HOST
@@ -149,3 +170,65 @@ KRKNC_WEBSOCKET_HOST=0.0.0.0:2794
 ```
 ### KRKNC_WEBSOCKET_SUB_PROTOCOL
 Specify the sub-protocol name for the Websocket Server.
+
+## iBeacon
+The iBeacon feature is enabled by setting `KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH`.
+### KRKNC_IBEACON_FILTER_DURATION_SEC
+Set the filter duration in seconds to prevent duplicate beacon detections.
+### KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH
+Specify the path to a YAML file containing allowed beacon UUIDs for filtering.
+
+## Serial Communication
+The Serial Communication feature is enabled by setting `KRKNC_SERIAL_DEVICE_NAME`.
+### KRKNC_SERIAL_DEVICE_NAME
+Set a descriptive name for the serial device.
+### KRKNC_SERIAL_PORT
+Specify the serial port path. In most cases, the following setting should be sufficient:
+```bash
+KRKNC_SERIAL_PORT=/dev/ttyACM0
+```
+### KRKNC_SERIAL_BAUDRATE
+Set the baud rate for serial communication (default: 9600).
+### KRKNC_SERIAL_TIMEOUT_SEC
+Specify the timeout in seconds for serial read operations.
+
+## TextFile Monitoring
+The TextFile monitoring feature is enabled by setting `KRKNC_TEXTFILE_MONITOR_DIR_PATH`.
+
+### KRKNC_TEXTFILE_TARGET_FILE_PATH
+Specify the target file path to read (default: "data/data.txt").
+
+### KRKNC_TEXTFILE_MONITOR_DIR_PATH
+Specify the directory path to monitor for file changes (default: "data/").
+
+### KRKNC_TEXTFILE_GET_INTERVAL_SEC
+Set the interval in seconds for time-based monitoring (default: 10).
+
+### KRKNC_TEXTFILE_MONITORING_MODE
+Set the monitoring mode: "time_interval" or "event_driven" (default: "time_interval").
+
+### KRKNC_TEXTFILE_ALLOW_CREATE
+Enable monitoring of file creation events (default: true).
+
+### KRKNC_TEXTFILE_ALLOW_MODIFY
+Enable monitoring of file modification events (default: true).
+
+### KRKNC_TEXTFILE_REMOVE_CREATED_FILE_AFTER_READ
+Remove created files after reading (default: false).
+
+### KRKNC_TEXTFILE_REMOVE_FILES_EXCEPT_MODIFIED_AFTER_READ
+Remove all files except modified ones after reading (default: false).
+
+### KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ
+Remove all files after reading (default: false).
+
+### KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ
+Remove entire folder after reading (default: false).
+
+## Camera
+The Camera feature is enabled by setting `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`.
+### KRKNC_CAMERA_CAPTURE_INTERVAL_SEC
+Set the interval in seconds between camera snapshots. In most cases, the following setting should be sufficient:
+```bash
+KRKNC_CAMERA_CAPTURE_INTERVAL_SEC=5
+```
