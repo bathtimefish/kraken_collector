@@ -64,6 +64,10 @@ impl Collector for CameraCollector {
         let mut camera = Camera::new(camera_index, requested_format)
             .map_err(|e| anyhow::anyhow!("Failed to initialize camera: {}", e))?;
 
+        debug!("Opening camera stream...");
+        camera.open_stream()
+            .map_err(|e| anyhow::anyhow!("Failed to open camera stream: {}", e))?;
+
         debug!("Camera initialized successfully, starting capture loop...");
         debug!("Capture interval: {} seconds", self.config.camera.capture_interval_sec);
 
