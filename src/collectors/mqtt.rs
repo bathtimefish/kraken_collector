@@ -40,7 +40,7 @@ impl Collector for Mqtt {
             .build()
             .unwrap();
         let config: Config = config.try_deserialize().unwrap();
-        let mut config_for_info = config.clone();
+        let config_for_info = config.clone();
         let mut broker = Broker::new(config);
 
         let (mut tx, mut rx) = broker.link("kraken").unwrap();
@@ -55,8 +55,20 @@ impl Collector for Mqtt {
         
         tx.subscribe(&self.config.mqtt.topic).unwrap();
 
-        let server = config_for_info.v4.as_mut().and_then(|v4| v4.get_mut("1")).unwrap();
-        debug!("MQTT Broker was started that is listening on {}", server.listen.to_string());
+        // Log TCP MQTT v4 endpoint
+        if let Some(server) = config_for_info.v4.as_ref().and_then(|v4| v4.get("1")) {
+            debug!("MQTT Broker was started that is listening on {} (TCP v4)", server.listen.to_string());
+        }
+
+        // Log TCP MQTT v5 endpoint
+        if let Some(server) = config_for_info.v5.as_ref().and_then(|v5| v5.get("1")) {
+            debug!("MQTT Broker was started that is listening on {} (TCP v5)", server.listen.to_string());
+        }
+
+        // Log WebSocket endpoint
+        if let Some(ws_server) = config_for_info.ws.as_ref().and_then(|ws| ws.get("1")) {
+            debug!("MQTT Broker was started that is listening on {} (WebSocket)", ws_server.listen.to_string());
+        }
 
         loop {
             if let Some(notification) = rx.recv().unwrap() {
