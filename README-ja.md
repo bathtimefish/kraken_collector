@@ -75,7 +75,7 @@ INFO:root:KRAKEN BROKER is running as debug mode.
 ## Setup Collector
 Collectorをビルドします
 ```bash
-sudo apt install -y protobuf-compiler libudev-dev libssl-dev libdbus-1-dev pkg-config
+sudo apt install -y protobuf-compiler libudev-dev libssl-dev libdbus-1-dev pkg-config clang
 git clone https://github.com/bathtimefish/kraken_collector
 cd kraken_collector
 cargo build
