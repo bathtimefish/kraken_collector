@@ -63,6 +63,10 @@ notify-debouncer-full = "0.6.0"
 notify-types = "2.0.0"
 hf = "0.5.1"
 nokhwa = { version = "0.10.10", features = ["input-native"] }
+mailin-embedded = "0.8"
+mailparse = "0.16"
+base64 = "0.22"
+chrono = "0.4"
 
 [build-dependencies]
 tonic-build = { version = "0.12.2", features = ["prost"]}

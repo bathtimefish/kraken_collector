@@ -17,3 +17,4 @@ pub mod ibeacon;
 pub mod serial;
 pub mod textfile;
 pub mod camera;
+pub mod email;

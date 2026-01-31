@@ -31,6 +31,7 @@ I hope Kraken can deliver its benefits to areas where IoT has yet to reach.
 - Serial Communication
 - TextFile Monitoring
 - Camera (USB Camera Capture)
+- Email (SMTP Server)
 
 If your work requires other protocols, you can extend Kraken Collector by developing a new [collector](https://github.com/bathtimefish/kraken_collector/tree/main/src/collectors).
 
@@ -133,6 +134,17 @@ The functionality of the collector is configured through environment variables. 
 - `KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ`
 - `KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ`
 - `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`
+- `KRKNC_EMAIL_HOST_ADDR`
+- `KRKNC_EMAIL_SMTP_PORT`
+- `KRKNC_EMAIL_MAX_MESSAGE_SIZE`
+- `KRKNC_EMAIL_MAX_ATTACHMENT_SIZE`
+- `KRKNC_EMAIL_DOMAIN`
+- `KRKNC_EMAIL_AUTH_REQUIRED`
+- `KRKNC_EMAIL_ALLOWED_SENDERS`
+- `KRKNC_EMAIL_TLS_ENABLED`
+- `KRKNC_EMAIL_TLS_CERT_PATH`
+- `KRKNC_EMAIL_TLS_KEY_PATH`
+- `KRKNC_EMAIL_TLS_REQUIRE`
 
 ## for Broker
 ### KRKNC_BROKER_HOST
@@ -231,4 +243,101 @@ The Camera feature is enabled by setting `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`.
 Set the interval in seconds between camera snapshots. In most cases, the following setting should be sufficient:
 ```bash
 KRKNC_CAMERA_CAPTURE_INTERVAL_SEC=5
+```
+
+## Email (SMTP Server)
+The Email collector runs an embedded SMTP server that receives emails and forwards them to the broker. This feature is enabled by setting `KRKNC_EMAIL_HOST_ADDR` and `KRKNC_EMAIL_SMTP_PORT`.
+
+The collector parses incoming emails and extracts:
+- Sender IP address
+- From/To/Cc/Bcc addresses
+- Subject and body (text and HTML)
+- Attachments (with Base64 encoding)
+- Metadata (timestamp, message ID)
+
+### KRKNC_EMAIL_HOST_ADDR
+Specify the host address for the SMTP server to listen on (default: "0.0.0.0").
+```bash
+KRKNC_EMAIL_HOST_ADDR=0.0.0.0
+```
+
+### KRKNC_EMAIL_SMTP_PORT
+Set the port number for the SMTP server (default: 587).
+```bash
+KRKNC_EMAIL_SMTP_PORT=587
+```
+
+### KRKNC_EMAIL_MAX_MESSAGE_SIZE
+Set the maximum email message size in bytes (default: 10485760 = 10MB).
+```bash
+KRKNC_EMAIL_MAX_MESSAGE_SIZE=10485760
+```
+
+### KRKNC_EMAIL_MAX_ATTACHMENT_SIZE
+Set the maximum attachment size in bytes (default: 5242880 = 5MB). Attachments exceeding this limit will be skipped.
+```bash
+KRKNC_EMAIL_MAX_ATTACHMENT_SIZE=5242880
+```
+
+### KRKNC_EMAIL_DOMAIN
+Set the SMTP server domain name (default: "localhost"). Reserved for future implementation.
+```bash
+KRKNC_EMAIL_DOMAIN=localhost
+```
+
+### KRKNC_EMAIL_AUTH_REQUIRED
+Enable SMTP authentication requirement (default: false). Reserved for future implementation.
+```bash
+KRKNC_EMAIL_AUTH_REQUIRED=false
+```
+
+### KRKNC_EMAIL_ALLOWED_SENDERS
+Specify a comma-separated list of allowed sender email addresses or domains. If empty, all senders are allowed.
+```bash
+KRKNC_EMAIL_ALLOWED_SENDERS=trusted@example.com,admin@example.org
+```
+
+### KRKNC_EMAIL_TLS_ENABLED
+Enable TLS/SSL encryption (default: false). Reserved for future implementation.
+```bash
+KRKNC_EMAIL_TLS_ENABLED=false
+```
+
+### KRKNC_EMAIL_TLS_CERT_PATH
+Specify the path to the TLS certificate file. Reserved for future implementation.
+```bash
+KRKNC_EMAIL_TLS_CERT_PATH=/path/to/cert.pem
+```
+
+### KRKNC_EMAIL_TLS_KEY_PATH
+Specify the path to the TLS private key file. Reserved for future implementation.
+```bash
+KRKNC_EMAIL_TLS_KEY_PATH=/path/to/key.pem
+```
+
+### KRKNC_EMAIL_TLS_REQUIRE
+Require TLS for all connections (default: false). Reserved for future implementation.
+```bash
+KRKNC_EMAIL_TLS_REQUIRE=false
+```
+
+**Example Email Payload:**
+```json
+{
+  "ipaddr": "192.168.1.100",
+  "from": "sender@example.com",
+  "to": ["recipient@example.com"],
+  "subject": "Test Email",
+  "body": "This is a test email.",
+  "timestamp": "2024-01-01T12:00:00+00:00",
+  "message_id": "<abc123@example.com>",
+  "attachments": [
+    {
+      "name": "document.pdf",
+      "mime_type": "application/pdf",
+      "size": 1024,
+      "data": "Base64EncodedData..."
+    }
+  ]
+}
 ```
