@@ -64,6 +64,90 @@ pub struct GrpcCfg {
     pub host: String,
 }
 
+#[derive (Clone, Debug)]
+pub struct EmailCfg {
+    pub enable: bool,
+    pub host_addr: String,
+    pub smtp_port: u16,
+    pub max_message_size: usize,
+    pub max_attachment_size: usize,
+    #[allow(dead_code)]
+    pub domain: String,
+    #[allow(dead_code)]
+    pub auth_required: bool,
+    pub allowed_senders: Vec<String>,
+    // TLS settings (reserved for future implementation)
+    #[allow(dead_code)]
+    pub tls_enabled: bool,
+    #[allow(dead_code)]
+    pub tls_cert_path: Option<String>,
+    #[allow(dead_code)]
+    pub tls_key_path: Option<String>,
+    #[allow(dead_code)]
+    pub tls_require: bool,
+}
+
+impl Default for EmailCfg {
+    fn default() -> Self {
+        let mut email_enable = false;
+        // Enable if any email-specific env var is set
+        if env::var("KRKNC_EMAIL_HOST_ADDR").is_ok()
+            || env::var("KRKNC_EMAIL_SMTP_PORT").is_ok() {
+            email_enable = true;
+        }
+
+        let allowed_senders = env::var("KRKNC_EMAIL_ALLOWED_SENDERS")
+            .unwrap_or_default()
+            .split(',')
+            .filter(|s| !s.is_empty())
+            .map(|s| s.trim().to_string())
+            .collect();
+
+        let tls_cert_path = env::var("KRKNC_EMAIL_TLS_CERT_PATH")
+            .ok()
+            .filter(|s| !s.is_empty());
+
+        let tls_key_path = env::var("KRKNC_EMAIL_TLS_KEY_PATH")
+            .ok()
+            .filter(|s| !s.is_empty());
+
+        EmailCfg {
+            enable: email_enable,
+            host_addr: env::var("KRKNC_EMAIL_HOST_ADDR")
+                .unwrap_or("0.0.0.0".to_string()),
+            smtp_port: env::var("KRKNC_EMAIL_SMTP_PORT")
+                .unwrap_or("587".to_string())
+                .parse::<u16>()
+                .unwrap_or(587),
+            max_message_size: env::var("KRKNC_EMAIL_MAX_MESSAGE_SIZE")
+                .unwrap_or("10485760".to_string())
+                .parse::<usize>()
+                .unwrap_or(10485760), // 10MB
+            max_attachment_size: env::var("KRKNC_EMAIL_MAX_ATTACHMENT_SIZE")
+                .unwrap_or("5242880".to_string())
+                .parse::<usize>()
+                .unwrap_or(5242880), // 5MB
+            domain: env::var("KRKNC_EMAIL_DOMAIN")
+                .unwrap_or("localhost".to_string()),
+            auth_required: env::var("KRKNC_EMAIL_AUTH_REQUIRED")
+                .unwrap_or("false".to_string())
+                .parse::<bool>()
+                .unwrap_or(false),
+            allowed_senders,
+            tls_enabled: env::var("KRKNC_EMAIL_TLS_ENABLED")
+                .unwrap_or("false".to_string())
+                .parse::<bool>()
+                .unwrap_or(false),
+            tls_cert_path,
+            tls_key_path,
+            tls_require: env::var("KRKNC_EMAIL_TLS_REQUIRE")
+                .unwrap_or("false".to_string())
+                .parse::<bool>()
+                .unwrap_or(false),
+        }
+    }
+}
+
 
 #[derive (Clone, Debug)]
 pub struct CollectorCfg {
@@ -75,6 +159,7 @@ pub struct CollectorCfg {
     pub serial: SerialCfg,
     pub text_file: TextFileCfg,
     pub camera: CameraCfg,
+    pub email: EmailCfg,
 }
 
 impl Default for CollectorCfg {
@@ -155,6 +240,7 @@ impl Default for CollectorCfg {
                 enable: camera_enable,
                 capture_interval_sec: env::var("KRKNC_CAMERA_CAPTURE_INTERVAL_SEC").unwrap_or("5".to_string()).parse::<u64>().unwrap(),
             },
+            email: EmailCfg::default(),
         }
     }
 }
