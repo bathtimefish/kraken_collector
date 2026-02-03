@@ -33,6 +33,7 @@ Krakenの各機能は、私がIoTシステムを開発してきた中で利用�
 - Serial Communication（シリアル通信）
 - TextFile Monitoring（テキストファイル監視）
 - Camera（USBカメラキャプチャ）
+- Email（SMTPサーバー）
 
 もしあなたの仕事に他のプロトコルが必要な場合、新しい[collector](https://github.com/bathtimefish/kraken_collector/tree/main/src/collectors)を開発することでKraken Collectorを拡張することができます。
 
@@ -45,15 +46,12 @@ Kraken CollectorはRustで開発されており、[Kraken Broker](https://github
 Brokerをcloneします
 ```bash
 git clone https://github.com/bathtimefish/kraken_broker_python
-kraken_broker_python
+cd kraken_broker_python
 ```
 
-BlockerをSlackブローカーとして起動するための環境変数を設定します
+BrokerをSlackブローカーとして起動するための環境変数を設定します
 ```bash
-export PYTHONDONTWRITEBYTECODE=1 \
-export KRAKENB_DEBUG=1 \
-export KRAKENB_GRPC_HOST=[::]:50051 \
-export KRAKENB_SLACK_URL=[YOUR_SLACK_WEBHOOK_URL]
+export PYTHONDONTWRITEBYTECODE=1 export KRAKENB_DEBUG=1 export KRAKENB_GRPC_HOST=[::]:50051 export KRAKENB_SLACK_URL=[YOUR_SLACK_WEBHOOK_URL]
 ```
 
 ```bash
@@ -61,13 +59,13 @@ sudo apt update
 sudo apt install -y protobuf-compiler libudev-dev libssl-dev libdbus-1-dev pkg-config
 ```
 
-Blokerを起動します
+Brokerを起動します
 ```bash
 python ./src/main.py
 ```
 
 以下のようなログが表示されると起動が成功しています
-```bash
+```plaintext
 INFO:root:gRPC server was started on `[::]:50051`
 INFO:root:KRAKEN BROKER is running as debug mode.
 ```
@@ -83,9 +81,7 @@ cargo build
 
 CollectorをWebhookレシーバとして起動するための環境変数を設定します
 ```bash
-export KRKNC_BROKER_HOST=http://[::1]:50051 \
-exoprt KRKNC_WEBHOOK_PATH=webhook \
-export KRKNC_WEBHOOK_PORT=3000
+export KRKNC_BROKER_HOST=http://[::1]:50051 export KRKNC_WEBHOOK_PATH=webhook export KRKNC_WEBHOOK_PORT=3000
 ```
 
 Collectorを起動します
@@ -94,11 +90,11 @@ RUST_LOG=error,main=debug cargo run --bin main
 ```
 
 以下のようなログが表示されると起動が成功しています
-```bash
-[2024-01-01T00:00:00Z INFO  main] KRAKEN Collector -- The Highlevel Data Collector -- boot squence start.
+```plaintext
+[2024-01-01T00:00:00Z INFO  main] KRAKEN Collector -- The Highlevel Data Collector -- boot sequence start.
 [2024-01-01T00:00:00Z DEBUG main::service] starting webhook collector service...
 [2024-01-01T00:00:00Z DEBUG main::service] collector service started.
-[2024-01-01T00:00:00Z DEBUG main::collectors::webhook] Webhook server was started that is listening on http://0.0.0.0:3000
+[2024-01-01T00:00:00Z DEBUG main::collectors::webhook] Webhook server was started and is listening on http://0.0.0.0:3000
 ```
 
 ## Send data to Collector
@@ -108,7 +104,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"id":"101", "name":"env-se
 ```
 
 Slackで以下のようなメッセージが受信できたなら、Kraken Collector/Brokerは正常に動作しています
-```bash
+```plaintext
 kind=collector, provider=webhook, payload={"id":"101", "name":"env-sensor", "temp":"25.6", "hum":"52.4"}
 ```
 
@@ -140,9 +136,20 @@ Collectorの機能は環境変数で設定します。現在以下の環境変�
 - `KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ`
 - `KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ`
 - `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`
+- `KRKNC_EMAIL_HOST_ADDR`
+- `KRKNC_EMAIL_SMTP_PORT`
+- `KRKNC_EMAIL_MAX_MESSAGE_SIZE`
+- `KRKNC_EMAIL_MAX_ATTACHMENT_SIZE`
+- `KRKNC_EMAIL_DOMAIN`
+- `KRKNC_EMAIL_AUTH_REQUIRED`
+- `KRKNC_EMAIL_ALLOWED_SENDERS`
+- `KRKNC_EMAIL_TLS_ENABLED`
+- `KRKNC_EMAIL_TLS_CERT_PATH`
+- `KRKNC_EMAIL_TLS_KEY_PATH`
+- `KRKNC_EMAIL_TLS_REQUIRE`
 
 ## for Broker
-## KRKNC_BROKER_HOST
+### KRKNC_BROKER_HOST
 BrokerのURLを指定します。多くの場合次のような設定で良いはずです。
 
 ```bash
@@ -236,7 +243,104 @@ KRKNC_SERIAL_PORT=/dev/ttyACM0
 ## Camera
 Camera機能は `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC` を設定することで利用可能となります。
 ### KRKNC_CAMERA_CAPTURE_INTERVAL_SEC
-次のようにカメラスナップショットの間隔を秒単位で設定します。
+カメラスナップショットの間隔を秒単位で設定します。多くの場合、次のような設定で良いはずです。
 ```bash
 KRKNC_CAMERA_CAPTURE_INTERVAL_SEC=5
+```
+
+## Email (SMTP Server)
+Emailコレクタは組み込みSMTPサーバーを実行し、メールを受信してブローカーに転送します。この機能は `KRKNC_EMAIL_HOST_ADDR` と `KRKNC_EMAIL_SMTP_PORT` を設定することで利用可能となります。
+
+コレクタは受信メールを解析し、以下の情報を抽出します:
+- 送信者IPアドレス
+- From/To/Cc/Bccアドレス
+- 件名と本文（テキストおよびHTML）
+- 添付ファイル（Base64エンコーディング）
+- メタデータ（タイムスタンプ、メッセージID）
+
+### KRKNC_EMAIL_HOST_ADDR
+SMTPサーバーがリッスンするホストアドレスを指定します（デフォルト: "0.0.0.0"）。
+```bash
+KRKNC_EMAIL_HOST_ADDR=0.0.0.0
+```
+
+### KRKNC_EMAIL_SMTP_PORT
+SMTPサーバーのポート番号を設定します（デフォルト: 587）。
+```bash
+KRKNC_EMAIL_SMTP_PORT=587
+```
+
+### KRKNC_EMAIL_MAX_MESSAGE_SIZE
+メールメッセージの最大サイズをバイト単位で設定します（デフォルト: 10485760 = 10MB）。
+```bash
+KRKNC_EMAIL_MAX_MESSAGE_SIZE=10485760
+```
+
+### KRKNC_EMAIL_MAX_ATTACHMENT_SIZE
+添付ファイルの最大サイズをバイト単位で設定します（デフォルト: 5242880 = 5MB）。この制限を超える添付ファイルはスキップされます。
+```bash
+KRKNC_EMAIL_MAX_ATTACHMENT_SIZE=5242880
+```
+
+### KRKNC_EMAIL_DOMAIN
+SMTPサーバーのドメイン名を設定します（デフォルト: "localhost"）。将来の実装のために予約されています。
+```bash
+KRKNC_EMAIL_DOMAIN=localhost
+```
+
+### KRKNC_EMAIL_AUTH_REQUIRED
+SMTP認証要件を有効にします（デフォルト: false）。将来の実装のために予約されています。
+```bash
+KRKNC_EMAIL_AUTH_REQUIRED=false
+```
+
+### KRKNC_EMAIL_ALLOWED_SENDERS
+許可された送信者のメールアドレスまたはドメインをカンマ区切りで指定します。空の場合、すべての送信者が許可されます。
+```bash
+KRKNC_EMAIL_ALLOWED_SENDERS=trusted@example.com,admin@example.org
+```
+
+### KRKNC_EMAIL_TLS_ENABLED
+TLS/SSL暗号化を有効にします（デフォルト: false）。将来の実装のために予約されています。
+```bash
+KRKNC_EMAIL_TLS_ENABLED=false
+```
+
+### KRKNC_EMAIL_TLS_CERT_PATH
+TLS証明書ファイルのパスを指定します。将来の実装のために予約されています。
+```bash
+KRKNC_EMAIL_TLS_CERT_PATH=/path/to/cert.pem
+```
+
+### KRKNC_EMAIL_TLS_KEY_PATH
+TLS秘密鍵ファイルのパスを指定します。将来の実装のために予約されています。
+```bash
+KRKNC_EMAIL_TLS_KEY_PATH=/path/to/key.pem
+```
+
+### KRKNC_EMAIL_TLS_REQUIRE
+すべての接続でTLSを必須にします（デフォルト: false）。将来の実装のために予約されています。
+```bash
+KRKNC_EMAIL_TLS_REQUIRE=false
+```
+
+**メールペイロードの例:**
+```json
+{
+  "ipaddr": "192.168.1.100",
+  "from": "sender@example.com",
+  "to": ["recipient@example.com"],
+  "subject": "Test Email",
+  "body": "This is a test email.",
+  "timestamp": "2024-01-01T12:00:00+00:00",
+  "message_id": "<abc123@example.com>",
+  "attachments": [
+    {
+      "name": "document.pdf",
+      "mime_type": "application/pdf",
+      "size": 1024,
+      "data": "Base64EncodedData..."
+    }
+  ]
+}
 ```
