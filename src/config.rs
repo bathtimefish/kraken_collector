@@ -87,6 +87,15 @@ pub struct EmailCfg {
     pub tls_require: bool,
 }
 
+#[derive (Clone, Debug)]
+pub struct BjigCfg {
+    pub enable: bool,
+    pub device_path: String,
+    pub cli_bin_path: String,
+    pub data_timeout_sec: u64,
+    pub action_cooldown_sec: u64,
+}
+
 impl Default for EmailCfg {
     fn default() -> Self {
         let mut email_enable = false;
@@ -160,6 +169,7 @@ pub struct CollectorCfg {
     pub text_file: TextFileCfg,
     pub camera: CameraCfg,
     pub email: EmailCfg,
+    pub bjig: BjigCfg,
 }
 
 impl Default for CollectorCfg {
@@ -171,6 +181,7 @@ impl Default for CollectorCfg {
         let mut serial_enable = false;
         let mut textfile_enable = false;
         let mut camera_enable = false;
+        let mut bjig_enable = false;
         if env::var("KRKNC_WEBHOOK_PATH").is_ok() {
             webhook_enable = true;
         }
@@ -191,6 +202,9 @@ impl Default for CollectorCfg {
         }
         if env::var("KRKNC_CAMERA_CAPTURE_INTERVAL_SEC").is_ok() {
             camera_enable = true;
+        }
+        if env::var("KRKNC_BJIG_DEVICE_PATH").is_ok() {
+            bjig_enable = true;
         }
         CollectorCfg {
             grpc: GrpcCfg {
@@ -241,6 +255,13 @@ impl Default for CollectorCfg {
                 capture_interval_sec: env::var("KRKNC_CAMERA_CAPTURE_INTERVAL_SEC").unwrap_or("5".to_string()).parse::<u64>().unwrap(),
             },
             email: EmailCfg::default(),
+            bjig: BjigCfg {
+                enable: bjig_enable,
+                device_path: env::var("KRKNC_BJIG_DEVICE_PATH").unwrap_or("/dev/ttyACM0".to_string()),
+                cli_bin_path: env::var("KRKNC_BJIG_CLI_BIN_PATH").unwrap_or("./bin/bjig".to_string()),
+                data_timeout_sec: env::var("KRKNC_BJIG_DATA_TIMEOUT_SEC").unwrap_or("300".to_string()).parse::<u64>().unwrap(),
+                action_cooldown_sec: env::var("KRKNC_BJIG_ACTION_COOLDOWN_SEC").unwrap_or("30".to_string()).parse::<u64>().unwrap(),
+            },
         }
     }
 }

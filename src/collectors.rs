@@ -18,3 +18,4 @@ pub mod serial;
 pub mod textfile;
 pub mod camera;
 pub mod email;
+pub mod bjig;

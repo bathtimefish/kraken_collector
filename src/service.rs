@@ -9,6 +9,7 @@ use crate::{
         textfile::TextfileFactory,
         camera::CameraFactory,
         email::EmailFactory,
+        bjig::BjigFactory,
     },
     config::CollectorCfg
 };
@@ -24,6 +25,7 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
         Box::new(TextfileFactory::new(config.clone())),
         Box::new(CameraFactory::new(config.clone())),
         Box::new(EmailFactory::new(config.clone())),
+        Box::new(BjigFactory::new(config.clone())),
     ];
 
     let mut handles = Vec::new();
