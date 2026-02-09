@@ -34,6 +34,7 @@ Krakenの各機能は、私がIoTシステムを開発してきた中で利用�
 - TextFile Monitoring（テキストファイル監視）
 - Camera（USBカメラキャプチャ）
 - Email（SMTPサーバー）
+- BraveJIG（IoTエッジルーター）
 
 もしあなたの仕事に他のプロトコルが必要な場合、新しい[collector](https://github.com/bathtimefish/kraken_collector/tree/main/src/collectors)を開発することでKraken Collectorを拡張することができます。
 
@@ -71,11 +72,20 @@ INFO:root:KRAKEN BROKER is running as debug mode.
 ```
 
 ## Setup Collector
+submoduleを含めてリポジトリをクローンします
+```bash
+git clone --recurse-submodules https://github.com/bathtimefish/kraken_collector
+cd kraken_collector
+```
+
+すでにsubmoduleなしでクローンしている場合は、submoduleを初期化します
+```bash
+git submodule update --init --recursive
+```
+
 Collectorをビルドします
 ```bash
 sudo apt install -y protobuf-compiler libudev-dev libssl-dev libdbus-1-dev pkg-config clang
-git clone https://github.com/bathtimefish/kraken_collector
-cd kraken_collector
 cargo build
 ```
 
@@ -147,6 +157,10 @@ Collectorの機能は環境変数で設定します。現在以下の環境変�
 - `KRKNC_EMAIL_TLS_CERT_PATH`
 - `KRKNC_EMAIL_TLS_KEY_PATH`
 - `KRKNC_EMAIL_TLS_REQUIRE`
+- `KRKNC_BJIG_DEVICE_PATH`
+- `KRKNC_BJIG_CLI_BIN_PATH`
+- `KRKNC_BJIG_DATA_TIMEOUT_SEC`
+- `KRKNC_BJIG_ACTION_COOLDOWN_SEC`
 
 ## for Broker
 ### KRKNC_BROKER_HOST
@@ -342,5 +356,62 @@ KRKNC_EMAIL_TLS_REQUIRE=false
       "data": "Base64EncodedData..."
     }
   ]
+}
+```
+
+## BraveJIG（IoTエッジルーター）
+BraveJIGコレクタは、高性能IoTエッジルーターであるBraveJIG USBルーターとの統合を提供します。この機能は `KRKNC_BJIG_DEVICE_PATH` を設定することで自動的に有効になります。
+
+コレクタはルーターからのセンサーデータを監視し、リモートコントロール機能のためにブローカーとの双方向通信をサポートします。
+
+**注意:** BraveJIGコレクタには[bjig_controller](https://github.com/bathtimefish/bjig_controller)ライブラリが必要です。これはgit submoduleとして含まれています。リポジトリをクローンする際は `--recurse-submodules` オプションを使用するか、クローン後に `git submodule update --init --recursive` を実行してください。
+
+### KRKNC_BJIG_DEVICE_PATH
+BraveJIGルーターのシリアルデバイスパスを指定します。この変数を設定するとBraveJIGコレクタが有効になります（デフォルト: "/dev/ttyACM0"）。
+```bash
+KRKNC_BJIG_DEVICE_PATH=/dev/ttyACM0
+```
+
+### KRKNC_BJIG_CLI_BIN_PATH
+BraveJIG CLIバイナリのパスを設定します。
+```bash
+KRKNC_BJIG_CLI_BIN_PATH=[BraveJIG CLIのパス]
+```
+
+### KRKNC_BJIG_DATA_TIMEOUT_SEC
+データタイムアウトを秒単位で設定します。この期間内にデータを受信しない場合、ルーターは自動的に再起動されます（デフォルト: 300）。
+```bash
+KRKNC_BJIG_DATA_TIMEOUT_SEC=300
+```
+
+### KRKNC_BJIG_ACTION_COOLDOWN_SEC
+重複処理を防ぐためのアクションコマンド間のクールダウン期間を秒単位で設定します（デフォルト: 30）。
+```bash
+KRKNC_BJIG_ACTION_COOLDOWN_SEC=30
+```
+
+**機能:**
+- ルーターの自動起動と初期化
+- リアルタイムセンサーデータ監視
+- ブローカーとの双方向通信
+- データタイムアウト時の自動ルーター再起動
+- pause/resume機能を使ったアクションコマンド処理
+- アクションコマンドのデバウンスとクールダウン保護
+
+**データフロー:**
+1. コレクタがルーターを起動し、監視を開始
+2. センサーデータはgRPC経由でブローカーに転送
+3. ブローカーはコレクタにアクションコマンドを送信可能
+4. コレクタは監視を一時停止し、アクションを処理してから再開
+5. ルーター再起動イベント時にアラート通知を送信
+
+**センサーデータペイロードの例:**
+```json
+{
+  "sensor_id": "0121",
+  "module_id": "2468800203400004",
+  "temperature": 25.6,
+  "humidity": 52.4,
+  "timestamp": "2024-01-01T12:00:00+00:00"
 }
 ```

@@ -206,7 +206,7 @@ async fn process_ibeacon_data(
             "ibeacon",
             "application/json",
             "{}",
-            &serde_json::to_string(&json).unwrap().as_bytes()
+            &serde_json::to_vec(&json).unwrap()
         ).await;
     
         match sent {

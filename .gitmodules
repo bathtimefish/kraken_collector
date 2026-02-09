@@ -1,0 +1,3 @@
+[submodule "bjig_controller"]
+	path = bjig_controller
+	url = https://github.com/bathtimefish/bjig_controller.git

@@ -5,13 +5,13 @@ After=syslog.target network.target
 [Service]
 Type=simple
 EnvironmentFile=/etc/default/kraken_collector.env
-WorkingDirectory=/home/ubuntu/kraken_collector
-ExecStart=/home/ubuntu/kraken_collector/bin/collector
+WorkingDirectory=/home/pi/kraken_collector
+ExecStart=/home/pi/kraken_collector/bin/collector
 TimeoutStopSec=5
 KillMode=process
 Restart=always
-User=root
-Group=root
+User=pi
+Group=pi
 StandardOutput=journal
 StandardError=journal
 
