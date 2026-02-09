@@ -302,7 +302,7 @@ impl Collector for Bjig {
                         "bjig",
                         "application/json",
                         &serde_json::to_string(&meta_json).unwrap(),
-                        serde_json::to_string(&restart_result).unwrap().as_bytes(),
+                        &serde_json::to_vec(&restart_result).unwrap(),
                     )
                     .await
                     {
