@@ -29,15 +29,15 @@ async fn post_webhook(req: Request<IncomingBody>, grpc_config: Arc<Mutex<GrpcCfg
     let whole_body = req.collect().await?.aggregate();
     let body: serde_json::Value = serde_json::from_reader(whole_body.reader())?;
     debug!("POST /webhook: {}", &body);
-    let json_str = serde_json::to_string(&body)?;
-    
+    let json_bytes = serde_json::to_vec(&body)?;
+
     let grpc_config = grpc_config.lock().await;
     let sent = grpc::send(
         &*grpc_config,
         "webhook",
         "application/json",
         "{}",
-        &json_str.as_bytes()
+        &json_bytes
     ).await;
 
     match sent {

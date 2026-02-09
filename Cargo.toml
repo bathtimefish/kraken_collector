@@ -1,6 +1,6 @@
 [package]
 name = "kraken_collector"
-version = "2.3.2"
+version = "2.4.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -67,6 +67,7 @@ mailin-embedded = "0.8"
 mailparse = "0.16"
 base64 = "0.22"
 chrono = "0.4"
+bjig_controller = { path = "./bjig_controller" }
 
 [build-dependencies]
 tonic-build = { version = "0.12.2", features = ["prost"]}
