@@ -35,6 +35,7 @@ Krakenの各機能は、私がIoTシステムを開発してきた中で利用�
 - Camera（USBカメラキャプチャ）
 - Email（SMTPサーバー）
 - BraveJIG（IoTエッジルーター）
+- TCP Server（TCPサーバー）
 
 もしあなたの仕事に他のプロトコルが必要な場合、新しい[collector](https://github.com/bathtimefish/kraken_collector/tree/main/src/collectors)を開発することでKraken Collectorを拡張することができます。
 
@@ -161,6 +162,9 @@ Collectorの機能は環境変数で設定します。現在以下の環境変�
 - `KRKNC_BJIG_CLI_BIN_PATH`
 - `KRKNC_BJIG_DATA_TIMEOUT_SEC`
 - `KRKNC_BJIG_ACTION_COOLDOWN_SEC`
+- `KRKNC_TCP_HOST`
+- `KRKNC_TCP_PORT`
+- `KRKNC_TCP_BUFFER_SIZE`
 
 ## for Broker
 ### KRKNC_BROKER_HOST
@@ -414,4 +418,42 @@ KRKNC_BJIG_ACTION_COOLDOWN_SEC=30
   "humidity": 52.4,
   "timestamp": "2024-01-01T12:00:00+00:00"
 }
+```
+
+## TCP Server（TCPサーバー）
+TCP Serverコレクタは受信したTCP接続を待ち受け、受信したrawバイトデータをブローカーに転送します。この機能は `KRKNC_TCP_HOST` を設定することで利用可能となります。
+
+コレクタは複数のTCPクライアントへの同時接続を受け付け、受信した各データチャンクをバイナリペイロード（`application/octet-stream`）としてブローカーに転送します。主な用途はIoTセンサからのrawバイナリデータの受信です。
+
+**注意:** TCPはストリーム指向のプロトコルであり、メッセージの境界を保証しません。クライアントがバッファサイズを超えるデータを送信した場合、複数のgRPCメッセージに分割されてブローカーに届きます。バッファサイズ以内の小さなセンサーデータの場合は実用上問題ありません。
+
+### KRKNC_TCP_HOST
+TCPサーバーがリッスンするホストアドレスを指定します。この変数を設定するとTCPコレクタが有効になります（デフォルト: "0.0.0.0"）。
+```bash
+KRKNC_TCP_HOST=0.0.0.0
+```
+
+### KRKNC_TCP_PORT
+TCPサーバーのポート番号を設定します（デフォルト: 9000）。
+```bash
+KRKNC_TCP_PORT=9000
+```
+
+### KRKNC_TCP_BUFFER_SIZE
+接続ごとの読み取りバッファサイズをバイト単位で設定します（デフォルト: 4096）。1回の送信で大きなデータを受け取る場合はこの値を増やしてください。
+```bash
+KRKNC_TCP_BUFFER_SIZE=4096
+```
+
+**ブローカーに送信されるメタデータ:**
+```json
+{
+  "peer_addr": "192.168.1.100:54321"
+}
+```
+
+**netcatを使った利用例:**
+```bash
+echo "sensor data" | nc 127.0.0.1 9000
+printf '\x00\x01\x02\x03\xFF' | nc 127.0.0.1 9000
 ```

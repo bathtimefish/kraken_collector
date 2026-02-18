@@ -33,6 +33,7 @@ I hope Kraken can deliver its benefits to areas where IoT has yet to reach.
 - Camera (USB Camera Capture)
 - Email (SMTP Server)
 - BraveJIG (IoT Edge Router)
+- TCP Server
 
 If your work requires other protocols, you can extend Kraken Collector by developing a new [collector](https://github.com/bathtimefish/kraken_collector/tree/main/src/collectors).
 
@@ -159,6 +160,9 @@ The functionality of the collector is configured through environment variables. 
 - `KRKNC_BJIG_CLI_BIN_PATH`
 - `KRKNC_BJIG_DATA_TIMEOUT_SEC`
 - `KRKNC_BJIG_ACTION_COOLDOWN_SEC`
+- `KRKNC_TCP_HOST`
+- `KRKNC_TCP_PORT`
+- `KRKNC_TCP_BUFFER_SIZE`
 
 ## for Broker
 ### KRKNC_BROKER_HOST
@@ -411,4 +415,42 @@ KRKNC_BJIG_ACTION_COOLDOWN_SEC=30
   "humidity": 52.4,
   "timestamp": "2024-01-01T12:00:00+00:00"
 }
+```
+
+## TCP Server
+The TCP Server collector listens for incoming TCP connections and forwards received raw byte data to the broker. This feature is enabled by setting `KRKNC_TCP_HOST`.
+
+The collector accepts multiple simultaneous TCP client connections and forwards each received data chunk to the broker as binary payload (`application/octet-stream`). The primary use case is receiving raw binary data from IoT sensors.
+
+**Note:** TCP is a stream-oriented protocol and does not guarantee message boundaries. If a client sends data larger than the buffer size, it will be split into multiple gRPC messages. For small sensor data payloads that fit within the buffer size, this is not a concern in practice.
+
+### KRKNC_TCP_HOST
+Specify the host address for the TCP server to listen on. Setting this variable enables the TCP collector (default: "0.0.0.0").
+```bash
+KRKNC_TCP_HOST=0.0.0.0
+```
+
+### KRKNC_TCP_PORT
+Set the port number for the TCP server (default: 9000).
+```bash
+KRKNC_TCP_PORT=9000
+```
+
+### KRKNC_TCP_BUFFER_SIZE
+Set the read buffer size in bytes per connection (default: 4096). Increase this value if you expect to receive large data payloads in a single transmission.
+```bash
+KRKNC_TCP_BUFFER_SIZE=4096
+```
+
+**Metadata sent to broker:**
+```json
+{
+  "peer_addr": "192.168.1.100:54321"
+}
+```
+
+**Example usage with netcat:**
+```bash
+echo "sensor data" | nc 127.0.0.1 9000
+printf '\x00\x01\x02\x03\xFF' | nc 127.0.0.1 9000
 ```

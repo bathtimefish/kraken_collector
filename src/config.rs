@@ -96,6 +96,14 @@ pub struct BjigCfg {
     pub action_cooldown_sec: u64,
 }
 
+#[derive (Clone, Debug)]
+pub struct TcpCfg {
+    pub enable: bool,
+    pub host: String,
+    pub port: u16,
+    pub buffer_size: usize,
+}
+
 impl Default for EmailCfg {
     fn default() -> Self {
         let mut email_enable = false;
@@ -170,6 +178,7 @@ pub struct CollectorCfg {
     pub camera: CameraCfg,
     pub email: EmailCfg,
     pub bjig: BjigCfg,
+    pub tcp: TcpCfg,
 }
 
 impl Default for CollectorCfg {
@@ -182,6 +191,7 @@ impl Default for CollectorCfg {
         let mut textfile_enable = false;
         let mut camera_enable = false;
         let mut bjig_enable = false;
+        let mut tcp_enable = false;
         if env::var("KRKNC_WEBHOOK_PATH").is_ok() {
             webhook_enable = true;
         }
@@ -205,6 +215,9 @@ impl Default for CollectorCfg {
         }
         if env::var("KRKNC_BJIG_DEVICE_PATH").is_ok() {
             bjig_enable = true;
+        }
+        if env::var("KRKNC_TCP_HOST").is_ok() {
+            tcp_enable = true;
         }
         CollectorCfg {
             grpc: GrpcCfg {
@@ -261,6 +274,12 @@ impl Default for CollectorCfg {
                 cli_bin_path: env::var("KRKNC_BJIG_CLI_BIN_PATH").unwrap_or("./bin/bjig".to_string()),
                 data_timeout_sec: env::var("KRKNC_BJIG_DATA_TIMEOUT_SEC").unwrap_or("300".to_string()).parse::<u64>().unwrap(),
                 action_cooldown_sec: env::var("KRKNC_BJIG_ACTION_COOLDOWN_SEC").unwrap_or("30".to_string()).parse::<u64>().unwrap(),
+            },
+            tcp: TcpCfg {
+                enable: tcp_enable,
+                host: env::var("KRKNC_TCP_HOST").unwrap_or("0.0.0.0".to_string()),
+                port: env::var("KRKNC_TCP_PORT").unwrap_or("9000".to_string()).parse::<u16>().unwrap_or(9000),
+                buffer_size: env::var("KRKNC_TCP_BUFFER_SIZE").unwrap_or("4096".to_string()).parse::<usize>().unwrap_or(4096),
             },
         }
     }
