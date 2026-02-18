@@ -1,5 +1,5 @@
 use serde_json::json;
-use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use super::Collector;
 use super::CollectorFactory;
@@ -79,7 +79,21 @@ impl Collector for Tcp {
                                     )
                                     .await
                                     {
-                                        Ok(_) => debug!("Sent {} bytes from {} to gRPC", n, peer_addr_str),
+                                        Ok(response) => {
+                                            debug!("Sent {} bytes from {} to gRPC", n, peer_addr_str);
+                                            let kraken_response = response.into_inner();
+                                            // response_type=tcp のとき、payloadをTCPクライアントに書き戻す
+                                            if !kraken_response.payload.is_empty() {
+                                                if let Ok(response_meta) = serde_json::from_str::<serde_json::Value>(&kraken_response.metadata) {
+                                                    if response_meta.get("response_type").and_then(|v| v.as_str()) == Some("tcp") {
+                                                        match stream.write_all(&kraken_response.payload).await {
+                                                            Ok(_) => debug!("Sent {} bytes response to TCP client {}", kraken_response.payload.len(), peer_addr_str),
+                                                            Err(e) => error!("Failed to write response to TCP client {}: {:?}", peer_addr_str, e),
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                         Err(e) => error!("Failed to send to gRPC: {:?}", e),
                                     }
                                 }
