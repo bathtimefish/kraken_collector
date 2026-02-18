@@ -10,6 +10,7 @@ use crate::{
         camera::CameraFactory,
         email::EmailFactory,
         bjig::BjigFactory,
+        tcp::TcpFactory,
     },
     config::CollectorCfg
 };
@@ -26,6 +27,7 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
         Box::new(CameraFactory::new(config.clone())),
         Box::new(EmailFactory::new(config.clone())),
         Box::new(BjigFactory::new(config.clone())),
+        Box::new(TcpFactory::new(config.clone())),
     ];
 
     let mut handles = Vec::new();
