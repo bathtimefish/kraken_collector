@@ -16,18 +16,17 @@ struct MetaData {
 }
 
 #[derive(Debug, serde::Serialize)]
-struct RestartResult {
+struct ReconnectResult {
     status: String,
     timestamp: String,
-    steps: RestartSteps,
+    steps: ReconnectSteps,
     message: String,
 }
 
 #[derive(Debug, serde::Serialize)]
-struct RestartSteps {
-    stop: String,
-    start: String,
-    monitor: String,
+struct ReconnectSteps {
+    connect: String,
+    stabilize: String,
 }
 
 pub struct Bjig {
@@ -74,27 +73,6 @@ impl Collector for Bjig {
             .with_port(&device_path)
             .with_baud(115200);
 
-        // Step 1: Start router
-        info!("Starting router...");
-        match bjig.router().start().await {
-            Ok(result) => {
-                if result.is_success() {
-                    info!("Router started successfully");
-                } else {
-                    error!("Router start failed: {}", result.message);
-                    return Err(anyhow::anyhow!("Router start failed: {}", result.message));
-                }
-            }
-            Err(e) => {
-                error!("Failed to start router: {}", e);
-                return Err(e.into());
-            }
-        }
-
-        // Step 2: Wait 5 seconds
-        info!("Waiting 5 seconds for router initialization...");
-        sleep(Duration::from_secs(5)).await;
-
         // Shared state for timeout monitoring
         let last_data_time = Arc::new(Mutex::new(Instant::now()));
         let last_data_time_clone = Arc::clone(&last_data_time);
@@ -118,10 +96,10 @@ impl Collector for Bjig {
         let action_in_progress_action = action_in_progress.clone();
         let last_action_time_action = last_action_time.clone();
 
-        // Step 3: Start monitor with callback and handle
-        info!("Starting monitor...");
+        // Connect router and start monitor with callback and handle
+        info!("Connecting router and starting monitor...");
         let handle = bjig.monitor()
-            .start_with_callback_and_handle(move |line| {
+            .connect_with_callback_and_handle(move |line| {
                 // Clone for async block
                 let last_data_time_update = last_data_time_clone.clone();
                 let line_owned = line.to_string();
@@ -283,15 +261,15 @@ impl Collector for Bjig {
 
                 let elapsed = last_data_time_monitor.lock().await.elapsed();
                 if elapsed > Duration::from_secs(timeout_sec) {
-                    warn!("Data timeout detected ({} seconds), initiating router restart...", elapsed.as_secs());
+                    warn!("Data timeout detected ({} seconds), initiating router reconnect...", elapsed.as_secs());
 
-                    // Execute restart flow
-                    let restart_result = execute_restart_flow(
+                    // Execute reconnect flow
+                    let reconnect_result = execute_reconnect_flow(
                         &cli_bin_path_monitor,
                         &device_path_monitor,
                     ).await;
 
-                    // Send restart result to gRPC
+                    // Send reconnect result to gRPC
                     let metadata = MetaData {
                         bjig: "alert".to_string(),
                     };
@@ -302,12 +280,12 @@ impl Collector for Bjig {
                         "bjig",
                         "application/json",
                         &serde_json::to_string(&meta_json).unwrap(),
-                        &serde_json::to_vec(&restart_result).unwrap(),
+                        &serde_json::to_vec(&reconnect_result).unwrap(),
                     )
                     .await
                     {
-                        Ok(_) => info!("Sent restart result to gRPC"),
-                        Err(e) => error!("Failed to send restart result to gRPC: {:?}", e),
+                        Ok(_) => info!("Sent reconnect result to gRPC"),
+                        Err(e) => error!("Failed to send reconnect result to gRPC: {:?}", e),
                     }
 
                     // Reset last data time
@@ -332,21 +310,20 @@ impl Collector for Bjig {
     }
 }
 
-/// Execute router restart flow
-async fn execute_restart_flow(
+/// Execute router reconnect flow
+async fn execute_reconnect_flow(
     cli_bin_path: &str,
     device_path: &str,
-) -> RestartResult {
-    let mut steps = RestartSteps {
-        stop: "pending".to_string(),
-        start: "pending".to_string(),
-        monitor: "pending".to_string(),
+) -> ReconnectResult {
+    let mut steps = ReconnectSteps {
+        connect: "pending".to_string(),
+        stabilize: "pending".to_string(),
     };
 
     let bjig = match BjigController::new(cli_bin_path) {
         Ok(controller) => controller.with_port(device_path).with_baud(115200),
         Err(e) => {
-            return RestartResult {
+            return ReconnectResult {
                 status: "error".to_string(),
                 timestamp: chrono::Utc::now().to_rfc3339(),
                 steps,
@@ -355,76 +332,43 @@ async fn execute_restart_flow(
         }
     };
 
-    // Step 1: Stop router
-    info!("Restart flow: Stopping router...");
-    match bjig.router().stop().await {
+    // Step 1: Connect router
+    info!("Reconnect flow: Connecting router...");
+    match bjig.router().connect().await {
         Ok(result) => {
             if result.is_success() {
-                steps.stop = "success".to_string();
-                info!("Router stopped successfully");
+                steps.connect = "success".to_string();
+                info!("Router connect succeeded");
             } else {
-                steps.stop = "error".to_string();
-                return RestartResult {
+                steps.connect = "error".to_string();
+                return ReconnectResult {
                     status: "error".to_string(),
                     timestamp: chrono::Utc::now().to_rfc3339(),
                     steps,
-                    message: format!("Router stop failed: {}", result.message),
+                    message: format!("Router connect failed: {}", result.message),
                 };
             }
         }
         Err(e) => {
-            steps.stop = "error".to_string();
-            return RestartResult {
+            steps.connect = "error".to_string();
+            return ReconnectResult {
                 status: "error".to_string(),
                 timestamp: chrono::Utc::now().to_rfc3339(),
                 steps,
-                message: format!("Failed to stop router: {}", e),
+                message: format!("Failed to connect router: {}", e),
             };
         }
     }
 
-    // Step 2: Wait 10 seconds
-    info!("Restart flow: Waiting 10 seconds...");
-    sleep(Duration::from_secs(10)).await;
+    // Step 2: Wait for connection state to stabilize before reporting success
+    info!("Reconnect flow: Waiting 3 seconds for connection to stabilize...");
+    sleep(Duration::from_secs(3)).await;
+    steps.stabilize = "success".to_string();
 
-    // Step 3: Start router
-    info!("Restart flow: Starting router...");
-    match bjig.router().start().await {
-        Ok(result) => {
-            if result.is_success() {
-                steps.start = "success".to_string();
-                info!("Router started successfully");
-            } else {
-                steps.start = "error".to_string();
-                return RestartResult {
-                    status: "error".to_string(),
-                    timestamp: chrono::Utc::now().to_rfc3339(),
-                    steps,
-                    message: format!("Router start failed: {}", result.message),
-                };
-            }
-        }
-        Err(e) => {
-            steps.start = "error".to_string();
-            return RestartResult {
-                status: "error".to_string(),
-                timestamp: chrono::Utc::now().to_rfc3339(),
-                steps,
-                message: format!("Failed to start router: {}", e),
-            };
-        }
-    }
-
-    // Step 4: Wait 5 seconds
-    info!("Restart flow: Waiting 5 seconds for router initialization...");
-    sleep(Duration::from_secs(5)).await;
-
-    steps.monitor = "success".to_string();
-
-    RestartResult {
+    ReconnectResult {
         status: "success".to_string(),
         timestamp: chrono::Utc::now().to_rfc3339(),
         steps,
-        message: "Router restarted successfully".to_string(),
+        message: "Router reconnected successfully".to_string(),
     }
 }

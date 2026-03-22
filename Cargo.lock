@@ -347,7 +347,7 @@ dependencies = [
 
 [[package]]
 name = "bjig_controller"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "log",
@@ -1804,7 +1804,7 @@ dependencies = [
 
 [[package]]
 name = "kraken_collector"
-version = "2.4.1"
+version = "2.4.3"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
