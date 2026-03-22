@@ -380,7 +380,7 @@ KRKNC_BJIG_CLI_BIN_PATH=[path_to_bravejig_cli]
 ```
 
 ### KRKNC_BJIG_DATA_TIMEOUT_SEC
-Set the data timeout in seconds. If no data is received within this period, the router will be automatically restarted (default: 300).
+Set the data timeout in seconds. If no data is received within this period, the collector will automatically reconnect to the router and send an alert event (default: 300).
 ```bash
 KRKNC_BJIG_DATA_TIMEOUT_SEC=300
 ```
@@ -392,19 +392,19 @@ KRKNC_BJIG_ACTION_COOLDOWN_SEC=30
 ```
 
 **Features:**
-- Automatic router startup and initialization
+- Automatic router connection before monitoring
 - Real-time sensor data monitoring
 - Bidirectional communication with broker
-- Automatic router restart on data timeout
+- Automatic router reconnect on data timeout
 - Action command processing with pause/resume capability
 - Debounce and cooldown protection for action commands
 
 **Data Flow:**
-1. Collector starts router and begins monitoring
+1. Collector connects to the router and begins monitoring
 2. Sensor data is forwarded to broker via gRPC
 3. Broker can send action commands back to collector
 4. Collector pauses monitoring, processes action, then resumes
-5. Alert notifications sent on router restart events
+5. Alert notifications are sent on router reconnect events
 
 **Example Sensor Data Payload:**
 ```json
