@@ -6,6 +6,7 @@ use super::Collector;
 use super::CollectorFactory;
 use super::grpc;
 use crate::config::CollectorCfg;
+use bjig_controller::BjigError;
 use bjig_controller::{BjigController, MonitorHandle};
 use tokio::time::sleep;
 use tokio::sync::{mpsc, Mutex};
@@ -124,7 +125,9 @@ impl Collector for Bjig {
                     let guard = handle_action.lock().await;
                     match guard.as_ref() {
                         Some(handle) => handle.pause().await,
-                        None => Err(anyhow::anyhow!("Monitor handle unavailable during action processing").into()),
+                        None => Err(BjigError::CommandFailed(
+                            "Monitor handle unavailable during action processing".to_string(),
+                        )),
                     }
                 };
                 match pause_result {
@@ -156,7 +159,9 @@ impl Collector for Bjig {
                     let guard = handle_action.lock().await;
                     match guard.as_ref() {
                         Some(handle) => handle.resume().await,
-                        None => Err(anyhow::anyhow!("Monitor handle unavailable during action resume").into()),
+                        None => Err(BjigError::CommandFailed(
+                            "Monitor handle unavailable during action resume".to_string(),
+                        )),
                     }
                 };
                 match resume_result {
