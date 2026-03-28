@@ -9,11 +9,13 @@ use crate::{
         textfile::TextfileFactory,
         camera::CameraFactory,
         email::EmailFactory,
-        bjig::BjigFactory,
         tcp::TcpFactory,
     },
     config::CollectorCfg
 };
+
+#[cfg(feature = "bjig")]
+use crate::collectors::bjig::BjigFactory;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
@@ -26,6 +28,7 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
         Box::new(TextfileFactory::new(config.clone())),
         Box::new(CameraFactory::new(config.clone())),
         Box::new(EmailFactory::new(config.clone())),
+        #[cfg(feature = "bjig")]
         Box::new(BjigFactory::new(config.clone())),
         Box::new(TcpFactory::new(config.clone())),
     ];

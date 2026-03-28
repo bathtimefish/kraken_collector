@@ -88,6 +88,7 @@ pub struct EmailCfg {
 }
 
 #[derive (Clone, Debug)]
+#[allow(dead_code)]
 pub struct BjigCfg {
     pub enable: bool,
     pub device_path: String,
@@ -177,6 +178,7 @@ pub struct CollectorCfg {
     pub text_file: TextFileCfg,
     pub camera: CameraCfg,
     pub email: EmailCfg,
+    #[allow(dead_code)]
     pub bjig: BjigCfg,
     pub tcp: TcpCfg,
 }

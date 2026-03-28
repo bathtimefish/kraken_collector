@@ -32,7 +32,7 @@ I hope Kraken can deliver its benefits to areas where IoT has yet to reach.
 - TextFile Monitoring
 - Camera (USB Camera Capture)
 - Email (SMTP Server)
-- BraveJIG (IoT Edge Router)
+- BraveJIG (IoT Edge Router) - Paid Support
 - TCP Server
 
 If your work requires other protocols, you can extend Kraken Collector by developing a new [collector](https://github.com/bathtimefish/kraken_collector/tree/main/src/collectors).
@@ -71,15 +71,10 @@ INFO:root:KRAKEN BROKER is running as debug mode.
 ```
 
 ## Setup Collector
-Clone the repository with submodules:
+Clone the repository:
 ```bash
-git clone --recurse-submodules https://github.com/bathtimefish/kraken_collector
+git clone https://github.com/bathtimefish/kraken_collector
 cd kraken_collector
-```
-
-If you've already cloned without submodules, initialize them:
-```bash
-git submodule update --init --recursive
 ```
 
 Build the collector:
@@ -156,10 +151,6 @@ The functionality of the collector is configured through environment variables. 
 - `KRKNC_EMAIL_TLS_CERT_PATH`
 - `KRKNC_EMAIL_TLS_KEY_PATH`
 - `KRKNC_EMAIL_TLS_REQUIRE`
-- `KRKNC_BJIG_DEVICE_PATH`
-- `KRKNC_BJIG_CLI_BIN_PATH`
-- `KRKNC_BJIG_DATA_TIMEOUT_SEC`
-- `KRKNC_BJIG_ACTION_COOLDOWN_SEC`
 - `KRKNC_TCP_HOST`
 - `KRKNC_TCP_PORT`
 - `KRKNC_TCP_BUFFER_SIZE`
@@ -361,61 +352,9 @@ KRKNC_EMAIL_TLS_REQUIRE=false
 ```
 
 ## BraveJIG (IoT Edge Router)
-The BraveJIG collector provides integration with BraveJIG USB Router, a high-performance IoT edge router. This feature is automatically enabled when `KRKNC_BJIG_DEVICE_PATH` is set.
+The BraveJIG collector provides integration with BraveJIG USB Router, a high-performance IoT edge router for wireless sensor networks.
 
-The collector monitors sensor data from the router and supports bidirectional communication with the broker for remote control capabilities.
-
-**Note:** The BraveJIG collector requires the [bjig_controller](https://github.com/bathtimefish/bjig_controller) library, which is included as a git submodule. Make sure to clone the repository with `--recurse-submodules` or run `git submodule update --init --recursive` after cloning.
-
-### KRKNC_BJIG_DEVICE_PATH
-Specify the serial device path for the BraveJIG router. Setting this variable enables the BraveJIG collector (default: "/dev/ttyACM0").
-```bash
-KRKNC_BJIG_DEVICE_PATH=/dev/ttyACM0
-```
-
-### KRKNC_BJIG_CLI_BIN_PATH
-Set the path to the BraveJIG CLI binary.
-```bash
-KRKNC_BJIG_CLI_BIN_PATH=[path_to_bravejig_cli]
-```
-
-### KRKNC_BJIG_DATA_TIMEOUT_SEC
-Set the data timeout in seconds. If no data is received within this period, the collector will automatically reconnect to the router and send an alert event (default: 300).
-```bash
-KRKNC_BJIG_DATA_TIMEOUT_SEC=300
-```
-
-### KRKNC_BJIG_ACTION_COOLDOWN_SEC
-Set the cooldown period in seconds between action commands to prevent duplicate processing (default: 30).
-```bash
-KRKNC_BJIG_ACTION_COOLDOWN_SEC=30
-```
-
-**Features:**
-- Automatic router connection before monitoring
-- Real-time sensor data monitoring
-- Bidirectional communication with broker
-- Automatic router reconnect on data timeout
-- Action command processing with pause/resume capability
-- Debounce and cooldown protection for action commands
-
-**Data Flow:**
-1. Collector connects to the router and begins monitoring
-2. Sensor data is forwarded to broker via gRPC
-3. Broker can send action commands back to collector
-4. Collector pauses monitoring, processes action, then resumes
-5. Alert notifications are sent on router reconnect events
-
-**Example Sensor Data Payload:**
-```json
-{
-  "sensor_id": "0121",
-  "module_id": "2468800203400004",
-  "temperature": 25.6,
-  "humidity": 52.4,
-  "timestamp": "2024-01-01T12:00:00+00:00"
-}
-```
+**Note:** BraveJIG support is available as a paid feature. For setup instructions and access, please contact the maintainer.
 
 ## TCP Server
 The TCP Server collector listens for incoming TCP connections and forwards received raw byte data to the broker. This feature is enabled by setting `KRKNC_TCP_HOST`.
