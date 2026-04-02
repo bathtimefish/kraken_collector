@@ -5,7 +5,7 @@ use serde_json::json;
 use notify::{RecursiveMode, EventKind};
 use notify_types::event::*;
 use notify_debouncer_full::new_debouncer;
-use anyhow::{Result, Context, anyhow, bail};
+use anyhow::{Result, Context, bail};
 use super::Collector;
 use super::CollectorFactory;
 use super::grpc;
