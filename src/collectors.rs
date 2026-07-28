@@ -18,5 +18,6 @@ pub mod serial;
 pub mod textfile;
 pub mod camera;
 pub mod email;
+#[cfg(feature = "bjig")]
 pub mod bjig;
 pub mod tcp;
