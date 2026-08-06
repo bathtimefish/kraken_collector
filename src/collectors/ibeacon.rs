@@ -110,32 +110,28 @@ impl Collector for Ibeacon {
         loop {
             tokio::select! {
                 Some(event) = events.next() => {
-                    match event {
-                        CentralEvent::ManufacturerDataAdvertisement { id, manufacturer_data } => {
-                            if let Some(data) = manufacturer_data.get(&0x004C) { // Company Identifier of Apple
-                                let peripheral = adapter.peripheral(&id).await?;
-                                let seen_ibeacons = seen_ibeacons.clone();
-                                let data = data.clone();
-                                let allowed_uuids = allowed_uuids.clone();
-                                let filter_duration = filter_duration.clone();
-                                tokio::spawn({
-                                    let grpc_config = grpc_config.clone();
-                                    async move {
-                                        if let Err(e) = process_ibeacon_data(
-                                            &peripheral,
-                                            &data,
-                                            seen_ibeacons,
-                                            filter_duration,
-                                            allowed_uuids,
-                                            &grpc_config)
-                                        .await {
-                                            error!("Error processing iBeacon data: {}", e);
-                                        }
+                    if let CentralEvent::ManufacturerDataAdvertisement { id, manufacturer_data } = event {
+                        if let Some(data) = manufacturer_data.get(&0x004C) { // Company Identifier of Apple
+                            let peripheral = adapter.peripheral(&id).await?;
+                            let seen_ibeacons = seen_ibeacons.clone();
+                            let data = data.clone();
+                            let allowed_uuids = allowed_uuids.clone();
+                            tokio::spawn({
+                                let grpc_config = grpc_config.clone();
+                                async move {
+                                    if let Err(e) = process_ibeacon_data(
+                                        &peripheral,
+                                        &data,
+                                        seen_ibeacons,
+                                        filter_duration,
+                                        allowed_uuids,
+                                        &grpc_config)
+                                    .await {
+                                        error!("Error processing iBeacon data: {}", e);
                                     }
-                                });
-                            }
-                        },
-                        _ => {}
+                                }
+                            });
+                        }
                     }
                 },
             }
@@ -202,7 +198,7 @@ async fn process_ibeacon_data(
               local_name, address, uuid, major, minor, rssi);
         debug!("JSON: {}", serde_json::to_string_pretty(&json)?);
         let sent = grpc::send(
-            &grpc_config,
+            grpc_config,
             "ibeacon",
             "application/json",
             "{}",

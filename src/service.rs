@@ -55,7 +55,7 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
             handles.push(handle);
         }
     }
-    if handles.len() > 0 {
+    if !handles.is_empty() {
         debug!("collector service started.");
         for handle in handles {
             handle.join().unwrap();

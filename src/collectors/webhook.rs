@@ -33,7 +33,7 @@ async fn post_webhook(req: Request<IncomingBody>, grpc_config: Arc<Mutex<GrpcCfg
 
     let grpc_config = grpc_config.lock().await;
     let sent = grpc::send(
-        &*grpc_config,
+        &grpc_config,
         "webhook",
         "application/json",
         "{}",
