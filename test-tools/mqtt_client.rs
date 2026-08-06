@@ -1,7 +1,7 @@
-use tokio::{task, time};
 use rumqttc::{AsyncClient, MqttOptions, QoS};
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use serde::{Serialize, Deserialize};
+use tokio::{task, time};
 extern crate log;
 
 #[derive(Serialize, Deserialize, Debug)]

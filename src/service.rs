@@ -1,17 +1,10 @@
 use crate::{
     collectors::{
-        CollectorFactory,
-        webhook::WebhookFactory,
-        mqtt::MqttFactory,
-        websocket::WebsocketFactory,
-        ibeacon::IbeaconFactory,
-        serial::SerialFactory,
-        textfile::TextfileFactory,
-        camera::CameraFactory,
-        email::EmailFactory,
-        tcp::TcpFactory,
+        camera::CameraFactory, email::EmailFactory, ibeacon::IbeaconFactory, mqtt::MqttFactory,
+        serial::SerialFactory, tcp::TcpFactory, textfile::TextfileFactory, webhook::WebhookFactory,
+        websocket::WebsocketFactory, CollectorFactory,
     },
-    config::CollectorCfg
+    config::CollectorCfg,
 };
 
 #[cfg(feature = "bjig")]
@@ -48,8 +41,8 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
             let handle = std::thread::spawn(move || {
                 let started = service.start();
                 match started {
-                Ok(_) => debug!("{} collector started.", name),
-                Err(e) => error!("Failed to start {} collector: {}", name, e),
+                    Ok(_) => debug!("{} collector started.", name),
+                    Err(e) => error!("Failed to start {} collector: {}", name, e),
                 }
             });
             handles.push(handle);

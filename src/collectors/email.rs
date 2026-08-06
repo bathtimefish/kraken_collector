@@ -1,12 +1,12 @@
-use std::sync::Arc;
 use bytes::Bytes;
+use mailin_embedded::{response::*, Handler, Server};
 use mailparse::{parse_mail, MailHeaderMap, ParsedMail};
 use serde::Serialize;
-use mailin_embedded::{Handler, Server, response::*};
+use std::sync::Arc;
 
-use crate::config::{CollectorCfg, EmailCfg};
-use super::{Collector, CollectorFactory};
 use super::grpc;
+use super::{Collector, CollectorFactory};
+use crate::config::{CollectorCfg, EmailCfg};
 
 // Email payload structure
 #[derive(Serialize)]
@@ -71,7 +71,10 @@ impl EmailHandler {
         if self.config.allowed_senders.is_empty() {
             return true;
         }
-        self.config.allowed_senders.iter().any(|allowed| from.contains(allowed))
+        self.config
+            .allowed_senders
+            .iter()
+            .any(|allowed| from.contains(allowed))
     }
 }
 
@@ -92,7 +95,13 @@ impl Handler for EmailHandler {
         OK
     }
 
-    fn data_start(&mut self, _domain: &str, _from: &str, _is8bit: bool, _to: &[String]) -> Response {
+    fn data_start(
+        &mut self,
+        _domain: &str,
+        _from: &str,
+        _is8bit: bool,
+        _to: &[String],
+    ) -> Response {
         START_DATA
     }
 
@@ -252,17 +261,13 @@ async fn process_single_email(
     // Serialize to JSON
     let json_bytes = serde_json::to_vec(&payload)?;
 
-    debug!("Sending email payload to gRPC (size: {} bytes)", json_bytes.len());
+    debug!(
+        "Sending email payload to gRPC (size: {} bytes)",
+        json_bytes.len()
+    );
 
     // Send to gRPC
-    match grpc::send(
-        grpc_config,
-        "email",
-        "application/json",
-        "{}",
-        &json_bytes,
-    )
-    .await {
+    match grpc::send(grpc_config, "email", "application/json", "{}", &json_bytes).await {
         Ok(_) => {
             debug!("Email successfully processed and sent to broker");
             Ok(())
@@ -329,8 +334,12 @@ fn extract_attachments(
     debug!("Email has {} top-level subparts", parsed.subparts.len());
 
     for (i, part) in parsed.subparts.iter().enumerate() {
-        debug!("Part {}: mimetype={}, subparts={}",
-            i, part.ctype.mimetype, part.subparts.len());
+        debug!(
+            "Part {}: mimetype={}, subparts={}",
+            i,
+            part.ctype.mimetype,
+            part.subparts.len()
+        );
 
         if let Some(attachment) = extract_single_attachment(part, max_size)? {
             attachments.push(attachment);
@@ -455,7 +464,8 @@ impl Collector for Email {
 
         // Create SMTP server
         let mut server = Server::new(handler);
-        server.with_addr(&addr)
+        server
+            .with_addr(&addr)
             .map_err(|e| anyhow::anyhow!("Failed to set SMTP listen address: {}", e))?;
 
         info!(
@@ -464,7 +474,8 @@ impl Collector for Email {
         );
 
         // Start server (blocking) - mailin_embedded uses its own threading
-        server.serve()
+        server
+            .serve()
             .map_err(|e| anyhow::anyhow!("SMTP server error: {}", e))?;
 
         Ok(())

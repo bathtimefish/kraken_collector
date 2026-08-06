@@ -1,15 +1,15 @@
+use super::grpc;
+use super::Collector;
+use super::CollectorFactory;
+use crate::config::{CollectorCfg, GrpcCfg};
+use anyhow::{anyhow, bail, Context, Result};
+use notify::{EventKind, RecursiveMode};
+use notify_debouncer_full::new_debouncer;
+use notify_types::event::*;
+use serde_json::json;
 use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
-use serde_json::json;
-use notify::{RecursiveMode, EventKind};
-use notify_types::event::*;
-use notify_debouncer_full::new_debouncer;
-use anyhow::{Result, Context, bail, anyhow};
-use super::Collector;
-use super::CollectorFactory;
-use super::grpc;
-use crate::config::{CollectorCfg, GrpcCfg};
 
 #[derive(Clone, Debug)]
 struct TfcConfig {
@@ -60,7 +60,8 @@ fn read_file_content(file_path: &Path) -> Result<String> {
 fn is_hidden(path: &Path) -> Result<bool> {
     #[cfg(unix)]
     {
-        let file_name = path.file_name()
+        let file_name = path
+            .file_name()
             .ok_or_else(|| anyhow!("Cannot get filename from path: {}", path.display()))?;
         Ok(file_name.to_string_lossy().starts_with('.'))
     }
@@ -78,20 +79,26 @@ fn is_hidden(path: &Path) -> Result<bool> {
 }
 
 // Function to execute gRPC send in a separate thread
-fn send_to_broker(grpc_config: &GrpcCfg, collector_name: &str, content_type: &str, metadata: &str, payload: &[u8]) {
+fn send_to_broker(
+    grpc_config: &GrpcCfg,
+    collector_name: &str,
+    content_type: &str,
+    metadata: &str,
+    payload: &[u8],
+) {
     let grpc_config = grpc_config.clone();
     let collector_name = collector_name.to_string();
     let content_type = content_type.to_string();
     let metadata = metadata.to_string();
     let payload = payload.to_vec();
-    
+
     // Create and run Tokio runtime in a separate thread
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("Failed to create Tokio runtime");
-        
+
         rt.block_on(async {
             match grpc::send(
                 &grpc_config,
@@ -99,7 +106,9 @@ fn send_to_broker(grpc_config: &GrpcCfg, collector_name: &str, content_type: &st
                 &content_type,
                 &metadata,
                 &payload,
-            ).await {
+            )
+            .await
+            {
                 Ok(_) => debug!("File content sent to Kraken Broker"),
                 Err(e) => error!("Failed to send file content: {}", e),
             }
@@ -108,12 +117,16 @@ fn send_to_broker(grpc_config: &GrpcCfg, collector_name: &str, content_type: &st
 }
 
 // File operation function
-fn read_file_from_path(path: &Path, event_type: &str, config: &TfcConfig) -> Result<(), anyhow::Error> {
+fn read_file_from_path(
+    path: &Path,
+    event_type: &str,
+    config: &TfcConfig,
+) -> Result<(), anyhow::Error> {
     if is_hidden(path)? {
         debug!("Hidden file was not opened: {:?}", path);
         bail!("Hidden file");
     }
-    
+
     let result = read_file_content(path)?;
     debug!("Event Type: {:?}", event_type);
     debug!("Content excerpt: {:.10}", result);
@@ -140,26 +153,26 @@ enum CleanupStrategy {
 
 fn clean_directory(folder_path: &Path, strategy: CleanupStrategy) -> Result<()> {
     use CleanupStrategy::*;
-    
+
     fn normalize_path(path: &Path) -> Result<PathBuf> {
         std::fs::canonicalize(path)
             .with_context(|| format!("Failed to canonicalize path: {}", path.display()))
     }
-    
+
     let normalized_except_path = match &strategy {
         AllExcept(except_path) => {
             let normalized = normalize_path(except_path)?;
             Some(normalized)
-        },
+        }
         _ => None,
     };
-    
+
     for entry in std::fs::read_dir(folder_path)
-        .with_context(|| format!("Failed to read directory: {}", folder_path.display()))? {
-        
+        .with_context(|| format!("Failed to read directory: {}", folder_path.display()))?
+    {
         let entry = entry.with_context(|| "Failed to get directory entry")?;
         let path = entry.path();
-        
+
         match &strategy {
             AllFiles => {
                 if path.is_file() && !is_hidden(&path)? {
@@ -167,28 +180,33 @@ fn clean_directory(folder_path: &Path, strategy: CleanupStrategy) -> Result<()> 
                         .with_context(|| format!("Failed to remove file: {}", path.display()))?;
                     debug!("Deleted file: {:?}", &path);
                 }
-            },
+            }
             AllFolders => {
                 if path.is_dir() {
                     std::fs::remove_dir_all(&path)
                         .with_context(|| format!("Failed to remove folder: {}", path.display()))?;
                     debug!("Deleted folder: {:?}", &path);
                 }
-            },
+            }
             AllExcept(_) => {
                 if path.is_file() && !is_hidden(&path)? {
                     let normalized_path = normalize_path(&path)?;
-                    debug!("Compare normalize: {:?} vs {:?}", normalized_path, normalized_except_path.as_ref().unwrap());
-                    
+                    debug!(
+                        "Compare normalize: {:?} vs {:?}",
+                        normalized_path,
+                        normalized_except_path.as_ref().unwrap()
+                    );
+
                     if normalized_path != *normalized_except_path.as_ref().unwrap() {
-                        std::fs::remove_file(&path)
-                            .with_context(|| format!("Failed to remove file: {}", path.display()))?;
+                        std::fs::remove_file(&path).with_context(|| {
+                            format!("Failed to remove file: {}", path.display())
+                        })?;
                         debug!("Deleted file: {:?}", &path);
                     } else {
                         debug!("Kept file: {:?}", &path);
                     }
                 }
-            },
+            }
             Everything => {
                 if path.is_file() && !is_hidden(&path)? {
                     std::fs::remove_file(&path)
@@ -208,29 +226,29 @@ fn clean_directory(folder_path: &Path, strategy: CleanupStrategy) -> Result<()> 
 // Dispatch event
 fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Result<()> {
     debug!("Processing event: {}", event_type);
-    
+
     // Read file content
     read_file_from_path(path, event_type, config)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
-    
-    // Determine cleanup strategy 
+
+    // Determine cleanup strategy
     match event_type {
         "create" => {
             debug!("Created file has closed.");
-            
+
             if config.cleanup_options.remove_all_files_after_read {
                 debug!("Remove all files in {:?}", config.monitor_dir_path);
-                
+
                 // Add delay to ensure file operations are complete
                 thread::sleep(Duration::from_secs(1));
-                
+
                 clean_directory(
                     &config.monitor_dir_path,
                     if config.cleanup_options.remove_all_folders {
                         CleanupStrategy::Everything
                     } else {
                         CleanupStrategy::AllFiles
-                    }
+                    },
                 )?;
             } else if config.cleanup_options.remove_created_file_after_read {
                 // Delete created file after reading
@@ -239,55 +257,61 @@ fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Result<(
                 std::fs::remove_file(path)
                     .with_context(|| format!("Failed to remove file: {}", path.display()))?;
             }
-        },
+        }
         "modify" => {
             debug!("Modified file has closed.");
             if config.cleanup_options.remove_all_files_after_read {
                 // Delete all files after reading
                 thread::sleep(Duration::from_secs(1));
                 debug!("Remove all files in {:?}", config.monitor_dir_path);
-                
+
                 clean_directory(
                     &config.monitor_dir_path,
                     if config.cleanup_options.remove_all_folders {
                         CleanupStrategy::Everything
                     } else {
                         CleanupStrategy::AllFiles
-                    }
+                    },
                 )?;
-            } else if config.cleanup_options.remove_files_except_modified_after_read {
+            } else if config
+                .cleanup_options
+                .remove_files_except_modified_after_read
+            {
                 // Delete all files except the modified file
                 debug!("Remove all files except modified file");
                 clean_directory(
                     &config.monitor_dir_path,
-                    CleanupStrategy::AllExcept(path.to_path_buf())
+                    CleanupStrategy::AllExcept(path.to_path_buf()),
                 )?;
             }
-        },
+        }
         _ => {
             info!("Unknown event type: {}", event_type);
         }
     }
-    
+
     Ok(())
 }
 
 // Monitor by time interval
 fn monitor_by_time_interval(config: &TfcConfig) -> Result<()> {
-    // Check if the target file is valid 
+    // Check if the target file is valid
     check_file_validity(&config.target_file_path)
         .with_context(|| format!("Invalid target file: {}", config.target_file_path.display()))?;
-        
-    debug!("Start to monitor file by time interval: {}", config.target_file_path.display());
+
+    debug!(
+        "Start to monitor file by time interval: {}",
+        config.target_file_path.display()
+    );
     debug!("Interval: {} seconds", config.interval_sec);
-    
-    // main loop 
+
+    // main loop
     loop {
         match read_file_content(&config.target_file_path) {
             Ok(content) => {
                 debug!("Detected file content:");
                 debug!("---\n{}\n---", content);
-                
+
                 // Send data to Kraken Broker
                 let meta_json = json!({});
                 send_to_broker(
@@ -309,33 +333,42 @@ fn monitor_by_time_interval(config: &TfcConfig) -> Result<()> {
 // Event-driven monitoring
 fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
     let mut current_event_type = "unknown".to_string();
-    
+
     // Create a debouncer
     let (tx, rx) = std::sync::mpsc::channel();
     let debounce_interval = Duration::from_secs(config.interval_sec);
-    
+
     let mut debouncer = new_debouncer(debounce_interval, None, tx)
         .with_context(|| "Failed to create file system debouncer")?;
-        
-    debouncer.watch(&config.monitor_dir_path, RecursiveMode::Recursive)
-        .with_context(|| format!("Failed to watch directory: {}", config.monitor_dir_path.display()))?;
-        
-    debug!("Started event-driven monitoring for: {}", config.monitor_dir_path.display());
-    
+
+    debouncer
+        .watch(&config.monitor_dir_path, RecursiveMode::Recursive)
+        .with_context(|| {
+            format!(
+                "Failed to watch directory: {}",
+                config.monitor_dir_path.display()
+            )
+        })?;
+
+    debug!(
+        "Started event-driven monitoring for: {}",
+        config.monitor_dir_path.display()
+    );
+
     // main loop
     for result in rx {
         match result {
             Ok(events) => events.iter().for_each(|event| {
                 let kind = event.kind;
                 let paths = event.paths.clone();
-                
+
                 match kind {
                     EventKind::Create(create_kind) => {
                         if !config.file_options.allow_create {
                             debug!("Create events not allowed by configuration");
                             return;
                         }
-                        
+
                         match create_kind {
                             CreateKind::File => {
                                 for path in &paths {
@@ -344,24 +377,27 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                                         current_event_type = "create".to_string();
                                     }
                                 }
-                            },
+                            }
                             CreateKind::Folder => {
                                 if config.cleanup_options.remove_all_folders {
                                     debug!("Remove all folders in {:?}", config.monitor_dir_path);
-                                    if let Err(e) = clean_directory(&config.monitor_dir_path, CleanupStrategy::AllFolders) {
+                                    if let Err(e) = clean_directory(
+                                        &config.monitor_dir_path,
+                                        CleanupStrategy::AllFolders,
+                                    ) {
                                         error!("Failed to clean folders: {}", e);
                                     }
                                 }
-                            },
+                            }
                             _ => {}
                         }
-                    },
+                    }
                     EventKind::Modify(modify_kind) => {
                         if !config.file_options.allow_modify {
                             debug!("Modify events not allowed by configuration");
                             return;
                         }
-                        
+
                         if let ModifyKind::Data(_) = modify_kind {
                             for path in &paths {
                                 if let Ok(false) = is_hidden(path) {
@@ -370,7 +406,7 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                                 }
                             }
                         }
-                    },
+                    }
                     EventKind::Access(AccessKind::Close(_)) => {
                         let config = config.clone();
                         let paths = paths.clone();
@@ -383,19 +419,28 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                             if let Ok(false) = is_hidden(path) {
                                 debug!("Processing Close event for path: {}", path.display());
                                 if let Err(e) = dispatch_event(&config, path, &event_type) {
-                                    error!("Failed to dispatch event for path: {}: {}", path.display(), e);
+                                    error!(
+                                        "Failed to dispatch event for path: {}: {}",
+                                        path.display(),
+                                        e
+                                    );
                                 } else {
-                                    debug!("Successfully dispatched event for path: {}", path.display());
+                                    debug!(
+                                        "Successfully dispatched event for path: {}",
+                                        path.display()
+                                    );
                                 }
                             }
                         }
 
                         current_event_type = "unknown".to_string();
-                    },
+                    }
                     _ => {}
                 }
             }),
-            Err(errors) => errors.iter().for_each(|error| error!("Watch error: {:?}", error)),
+            Err(errors) => errors
+                .iter()
+                .for_each(|error| error!("Watch error: {:?}", error)),
         }
     }
     Ok(())
@@ -417,7 +462,9 @@ impl TextfileFactory {
 
 impl CollectorFactory for TextfileFactory {
     fn create(&self) -> Box<dyn Collector> {
-        Box::new(Textfile { config: self.config.clone() })
+        Box::new(Textfile {
+            config: self.config.clone(),
+        })
     }
 }
 
@@ -432,7 +479,7 @@ impl Collector for Textfile {
 
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
-        let config = TfcConfig{
+        let config = TfcConfig {
             grpc: self.config.grpc.clone(),
             target_file_path: PathBuf::from(self.config.text_file.target_file_path.clone()),
             monitor_dir_path: PathBuf::from(self.config.text_file.monitor_dir_path.clone()),
@@ -448,7 +495,10 @@ impl Collector for Textfile {
             },
             cleanup_options: CleanupOptions {
                 remove_created_file_after_read: self.config.text_file.remove_created,
-                remove_files_except_modified_after_read: self.config.text_file.remove_except_modified,
+                remove_files_except_modified_after_read: self
+                    .config
+                    .text_file
+                    .remove_except_modified,
                 remove_all_files_after_read: self.config.text_file.remove_all_files,
                 remove_all_folders: self.config.text_file.remove_all_folder,
             },

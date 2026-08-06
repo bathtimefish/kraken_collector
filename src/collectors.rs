@@ -8,18 +8,17 @@ pub trait CollectorFactory: Send {
     fn create(&self) -> Box<dyn Collector>;
 }
 
-
-pub mod grpc;
-pub mod webhook;
-pub mod mqtt;
-pub mod websocket;
-pub mod ibeacon;
-pub mod serial;
-pub mod textfile;
-pub mod camera;
-pub mod email;
 #[cfg(feature = "bjig")]
 pub mod bjig;
-pub mod tcp;
+pub mod camera;
 #[cfg(feature = "direct4b")]
 pub mod direct4b;
+pub mod email;
+pub mod grpc;
+pub mod ibeacon;
+pub mod mqtt;
+pub mod serial;
+pub mod tcp;
+pub mod textfile;
+pub mod webhook;
+pub mod websocket;

@@ -5,8 +5,8 @@
 //
 // Contact the maintainer for commercial licensing and access.
 
-use crate::config::CollectorCfg;
 use super::{Collector, CollectorFactory};
+use crate::config::CollectorCfg;
 
 /// direct4b Message Collector (Stub)
 ///
@@ -37,7 +37,9 @@ impl Direct4bFactory {
 
 impl CollectorFactory for Direct4bFactory {
     fn create(&self) -> Box<dyn Collector> {
-        Box::new(Direct4bCollector { config: self.config.clone() })
+        Box::new(Direct4bCollector {
+            config: self.config.clone(),
+        })
     }
 }
 
