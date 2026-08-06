@@ -53,7 +53,7 @@ impl Collector for CameraCollector {
         let cameras = query(ApiBackend::Auto)
             .map_err(|e| anyhow::anyhow!("Failed to query cameras: {}", e))?;
         
-        let camera_info = cameras.get(0)
+        let camera_info = cameras.first()
             .ok_or_else(|| anyhow::anyhow!("No camera found"))?;
         
         debug!("Found camera: {} (index: {:?})", camera_info.human_name(), camera_info.index());

@@ -46,7 +46,7 @@ async fn requests(client: AsyncClient) {
             status,
         };
         let payload = serde_json::to_string(&message).unwrap().as_bytes().to_vec();
-        let topic = format!("kraken");
+        let topic = "kraken".to_string();
         let qos = QoS::AtMostOnce;
         client.publish(topic, qos, false, payload).await.unwrap();
         status = !status;

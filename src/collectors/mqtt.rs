@@ -57,17 +57,17 @@ impl Collector for Mqtt {
 
         // Log TCP MQTT v4 endpoint
         if let Some(server) = config_for_info.v4.as_ref().and_then(|v4| v4.get("1")) {
-            debug!("MQTT Broker was started that is listening on {} (TCP v4)", server.listen.to_string());
+            debug!("MQTT Broker was started that is listening on {} (TCP v4)", server.listen);
         }
 
         // Log TCP MQTT v5 endpoint
         if let Some(server) = config_for_info.v5.as_ref().and_then(|v5| v5.get("1")) {
-            debug!("MQTT Broker was started that is listening on {} (TCP v5)", server.listen.to_string());
+            debug!("MQTT Broker was started that is listening on {} (TCP v5)", server.listen);
         }
 
         // Log WebSocket endpoint
         if let Some(ws_server) = config_for_info.ws.as_ref().and_then(|ws| ws.get("1")) {
-            debug!("MQTT Broker was started that is listening on {} (WebSocket)", ws_server.listen.to_string());
+            debug!("MQTT Broker was started that is listening on {} (WebSocket)", ws_server.listen);
         }
 
         loop {

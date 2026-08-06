@@ -125,7 +125,7 @@ fn read_file_from_path(path: &Path, event_type: &str, config: &TfcConfig) -> Res
         "textfile",
         "text/plain",
         &serde_json::to_string(&meta_json).unwrap(),
-        &result.as_bytes(),
+        result.as_bytes(),
     );
 
     Ok(())
@@ -210,7 +210,7 @@ fn dispatch_event(config: &TfcConfig, path: &Path, event_type: &str) -> Result<(
     debug!("Processing event: {}", event_type);
     
     // Read file content
-    let _ = read_file_from_path(path, event_type, config)
+    read_file_from_path(path, event_type, config)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
     
     // Determine cleanup strategy 
@@ -295,7 +295,7 @@ fn monitor_by_time_interval(config: &TfcConfig) -> Result<()> {
                     "textfile",
                     "text/plain",
                     &serde_json::to_string(&meta_json).unwrap(),
-                    &content.as_bytes(),
+                    content.as_bytes(),
                 );
             }
             Err(err) => {
@@ -362,43 +362,35 @@ fn monitor_by_dir_event(config: &TfcConfig) -> Result<()> {
                             return;
                         }
                         
-                        match modify_kind {
-                            ModifyKind::Data(_) => {
-                                for path in &paths {
-                                    if let Ok(false) = is_hidden(path) {
-                                        debug!("Modify Data event detected");
-                                        current_event_type = "modify".to_string();
-                                    }
+                        if let ModifyKind::Data(_) = modify_kind {
+                            for path in &paths {
+                                if let Ok(false) = is_hidden(path) {
+                                    debug!("Modify Data event detected");
+                                    current_event_type = "modify".to_string();
                                 }
-                            },
-                            _ => {}
+                            }
                         }
                     },
-                    EventKind::Access(access_kind) => {
-                        match access_kind {
-                            AccessKind::Close(_) => {
-                                let config = config.clone();
-                                let paths = paths.clone();
-                                let event_type = current_event_type.clone();
-                                
-                                // Add delay to wait for file to be completely closed
-                                thread::sleep(Duration::from_secs(1));
-                                
-                                for path in &paths {
-                                    if let Ok(false) = is_hidden(path) {
-                                        debug!("Processing Close event for path: {}", path.display());
-                                        if let Err(e) = dispatch_event(&config, path, &event_type) {
-                                            error!("Failed to dispatch event for path: {}: {}", path.display(), e);
-                                        } else {
-                                            debug!("Successfully dispatched event for path: {}", path.display());
-                                        }
-                                    }
+                    EventKind::Access(AccessKind::Close(_)) => {
+                        let config = config.clone();
+                        let paths = paths.clone();
+                        let event_type = current_event_type.clone();
+
+                        // Add delay to wait for file to be completely closed
+                        thread::sleep(Duration::from_secs(1));
+
+                        for path in &paths {
+                            if let Ok(false) = is_hidden(path) {
+                                debug!("Processing Close event for path: {}", path.display());
+                                if let Err(e) = dispatch_event(&config, path, &event_type) {
+                                    error!("Failed to dispatch event for path: {}: {}", path.display(), e);
+                                } else {
+                                    debug!("Successfully dispatched event for path: {}", path.display());
                                 }
-                                
-                                current_event_type = "unknown".to_string();
-                            },
-                            _ => {}
+                            }
                         }
+
+                        current_event_type = "unknown".to_string();
                     },
                     _ => {}
                 }
