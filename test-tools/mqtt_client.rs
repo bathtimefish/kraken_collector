@@ -1,7 +1,7 @@
-use tokio::{task, time};
 use rumqttc::{AsyncClient, MqttOptions, QoS};
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use serde::{Serialize, Deserialize};
+use tokio::{task, time};
 extern crate log;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -46,7 +46,7 @@ async fn requests(client: AsyncClient) {
             status,
         };
         let payload = serde_json::to_string(&message).unwrap().as_bytes().to_vec();
-        let topic = format!("kraken");
+        let topic = "kraken".to_string();
         let qos = QoS::AtMostOnce;
         client.publish(topic, qos, false, payload).await.unwrap();
         status = !status;

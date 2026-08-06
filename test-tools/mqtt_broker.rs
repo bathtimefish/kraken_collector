@@ -1,6 +1,6 @@
 use rumqttd::{Broker, Config, Notification};
-use std::thread;
 use std::str;
+use std::thread;
 #[macro_use]
 extern crate log;
 

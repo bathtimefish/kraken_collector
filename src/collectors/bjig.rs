@@ -5,8 +5,8 @@
 //
 // Contact the maintainer for commercial licensing and access.
 
-use crate::config::CollectorCfg;
 use super::{Collector, CollectorFactory};
+use crate::config::CollectorCfg;
 
 /// BraveJIG Collector (Stub)
 ///
@@ -38,7 +38,9 @@ impl BjigFactory {
 
 impl CollectorFactory for BjigFactory {
     fn create(&self) -> Box<dyn Collector> {
-        Box::new(Bjig { config: self.config.clone() })
+        Box::new(Bjig {
+            config: self.config.clone(),
+        })
     }
 }
 

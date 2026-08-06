@@ -1,18 +1,18 @@
-use std::error::Error;
-use std::fs;
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
-use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter, CentralEvent};
+use super::grpc;
+use super::Collector;
+use super::CollectorFactory;
+use crate::config::CollectorCfg;
+use btleplug::api::{Central, CentralEvent, Manager as _, Peripheral, ScanFilter};
 use btleplug::platform::Manager;
 use futures::stream::StreamExt;
 use serde::Deserialize;
 use serde_json::json;
+use std::collections::HashMap;
+use std::error::Error;
+use std::fs;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use uuid::Uuid;
-use super::Collector;
-use super::CollectorFactory;
-use super::grpc;
-use crate::config::CollectorCfg;
 
 #[derive(Debug, serde::Serialize)]
 struct IBeaconData {
@@ -44,7 +44,9 @@ impl IbeaconFactory {
 
 impl CollectorFactory for IbeaconFactory {
     fn create(&self) -> Box<dyn Collector> {
-        Box::new(Ibeacon { config: self.config.clone() })
+        Box::new(Ibeacon {
+            config: self.config.clone(),
+        })
     }
 }
 
@@ -60,7 +62,10 @@ impl Collector for Ibeacon {
     #[tokio::main(flavor = "current_thread")]
     async fn start(&self) -> Result<(), anyhow::Error> {
         let grpc_config = self.config.grpc.clone();
-        debug!("Using allowed uuid list: {}", &self.config.ibeacon.allowed_uuid_filter_path);
+        debug!(
+            "Using allowed uuid list: {}",
+            &self.config.ibeacon.allowed_uuid_filter_path
+        );
         let config = match load_config(&self.config.ibeacon.allowed_uuid_filter_path) {
             Ok(config) => config,
             Err(e) => {
@@ -93,15 +98,18 @@ impl Collector for Ibeacon {
         let adapter = adapter_list.into_iter().nth(0).unwrap();
         debug!("Adapter selected: {}", adapter.adapter_info().await?);
 
-        // set filter duration 
-        let filter_duration_secs = self.config.ibeacon.filter_duration; 
+        // set filter duration
+        let filter_duration_secs = self.config.ibeacon.filter_duration;
         let filter_duration = Duration::from_secs(filter_duration_secs);
 
-        debug!("Using filter interval duration: {} seconds", filter_duration_secs);
+        debug!(
+            "Using filter interval duration: {} seconds",
+            filter_duration_secs
+        );
 
-        // start scaning 
+        // start scaning
         let scan_filter = ScanFilter {
-            services: vec![],  // scan all services 
+            services: vec![], // scan all services
         };
         adapter.start_scan(scan_filter).await?;
 
@@ -110,32 +118,28 @@ impl Collector for Ibeacon {
         loop {
             tokio::select! {
                 Some(event) = events.next() => {
-                    match event {
-                        CentralEvent::ManufacturerDataAdvertisement { id, manufacturer_data } => {
-                            if let Some(data) = manufacturer_data.get(&0x004C) { // Company Identifier of Apple
-                                let peripheral = adapter.peripheral(&id).await?;
-                                let seen_ibeacons = seen_ibeacons.clone();
-                                let data = data.clone();
-                                let allowed_uuids = allowed_uuids.clone();
-                                let filter_duration = filter_duration.clone();
-                                tokio::spawn({
-                                    let grpc_config = grpc_config.clone();
-                                    async move {
-                                        if let Err(e) = process_ibeacon_data(
-                                            &peripheral,
-                                            &data,
-                                            seen_ibeacons,
-                                            filter_duration,
-                                            allowed_uuids,
-                                            &grpc_config)
-                                        .await {
-                                            error!("Error processing iBeacon data: {}", e);
-                                        }
+                    if let CentralEvent::ManufacturerDataAdvertisement { id, manufacturer_data } = event {
+                        if let Some(data) = manufacturer_data.get(&0x004C) { // Company Identifier of Apple
+                            let peripheral = adapter.peripheral(&id).await?;
+                            let seen_ibeacons = seen_ibeacons.clone();
+                            let data = data.clone();
+                            let allowed_uuids = allowed_uuids.clone();
+                            tokio::spawn({
+                                let grpc_config = grpc_config.clone();
+                                async move {
+                                    if let Err(e) = process_ibeacon_data(
+                                        &peripheral,
+                                        &data,
+                                        seen_ibeacons,
+                                        filter_duration,
+                                        allowed_uuids,
+                                        &grpc_config)
+                                    .await {
+                                        error!("Error processing iBeacon data: {}", e);
                                     }
-                                });
-                            }
-                        },
-                        _ => {}
+                                }
+                            });
+                        }
                     }
                 },
             }
@@ -168,12 +172,14 @@ async fn process_ibeacon_data(
         let address = peripheral.address().to_string();
         let properties = peripheral.properties().await?.ok_or("No properties")?;
         let rssi = properties.rssi.unwrap_or(0);
-        let local_name = properties.local_name.unwrap_or_else(|| String::from("Unknown"));
+        let local_name = properties
+            .local_name
+            .unwrap_or_else(|| String::from("Unknown"));
 
-        // create a key for the iBeacon 
+        // create a key for the iBeacon
         let ibeacon_key = format!("{}:{}:{}", uuid, major, minor);
 
-        // get the current time 
+        // get the current time
         let now = Instant::now();
 
         {
@@ -198,17 +204,20 @@ async fn process_ibeacon_data(
         };
 
         let json = json!(ibeacon_data);
-        debug!("iBeacon detected: {} ({}), UUID: {}, Major: {}, Minor: {}, RSSI: {}",
-              local_name, address, uuid, major, minor, rssi);
+        debug!(
+            "iBeacon detected: {} ({}), UUID: {}, Major: {}, Minor: {}, RSSI: {}",
+            local_name, address, uuid, major, minor, rssi
+        );
         debug!("JSON: {}", serde_json::to_string_pretty(&json)?);
         let sent = grpc::send(
-            &grpc_config,
+            grpc_config,
             "ibeacon",
             "application/json",
             "{}",
-            &serde_json::to_vec(&json).unwrap()
-        ).await;
-    
+            &serde_json::to_vec(&json).unwrap(),
+        )
+        .await;
+
         match sent {
             Ok(msg) => debug!("Sent message to grpc server: {:?}", msg),
             Err(msg) => error!("Failed to send to grpc: {:?}", msg),
@@ -220,15 +229,13 @@ async fn process_ibeacon_data(
 // load configuration from the yaml file
 fn load_config(path: &str) -> Result<Config, anyhow::Error> {
     match fs::read_to_string(path) {
-        Ok(content) => {
-            match serde_yaml::from_str::<Config>(&content) {
-                Ok(config) => Ok(config),
-                Err(e) => {
-                    error!("Failed to parse YAML file: {}", e);
-                    Err(anyhow::Error::new(e))
-                }
+        Ok(content) => match serde_yaml::from_str::<Config>(&content) {
+            Ok(config) => Ok(config),
+            Err(e) => {
+                error!("Failed to parse YAML file: {}", e);
+                Err(anyhow::Error::new(e))
             }
-        }
+        },
         Err(e) => {
             error!("Failed to read YAML file at {}: {}", path, e);
             Err(anyhow::Error::new(e))

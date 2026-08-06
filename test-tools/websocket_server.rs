@@ -1,7 +1,7 @@
-use tokio::net::{TcpListener, TcpStream};
-use tokio_tungstenite::{accept_async, tungstenite::Message};
 use futures::{SinkExt, StreamExt};
 use std::net::SocketAddr;
+use tokio::net::{TcpListener, TcpStream};
+use tokio_tungstenite::{accept_async, tungstenite::Message};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -29,7 +29,10 @@ async fn handle_connection(stream: TcpStream, addr: SocketAddr) {
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
     // Send initial hello message
-    if let Err(e) = ws_sender.send(Message::Text("Hello".to_string().into())).await {
+    if let Err(e) = ws_sender
+        .send(Message::Text("Hello".to_string().into()))
+        .await
+    {
         println!("Error sending hello message to {}: {}", addr, e);
         return;
     }
@@ -39,7 +42,10 @@ async fn handle_connection(stream: TcpStream, addr: SocketAddr) {
             Ok(Message::Text(text)) => {
                 println!("Received text from {}: {}", addr, text);
                 // Echo the message back
-                if let Err(e) = ws_sender.send(Message::Text(format!("Echo: {}", text).into())).await {
+                if let Err(e) = ws_sender
+                    .send(Message::Text(format!("Echo: {}", text).into()))
+                    .await
+                {
                     println!("Error sending echo to {}: {}", addr, e);
                     break;
                 }

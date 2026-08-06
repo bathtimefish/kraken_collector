@@ -1,6 +1,6 @@
 use std::env;
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct WebhookCfg {
     pub enable: bool,
     #[allow(dead_code)]
@@ -8,7 +8,7 @@ pub struct WebhookCfg {
     pub port: u16,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct MqttCfg {
     pub enable: bool,
     //pub host: String,
@@ -16,20 +16,20 @@ pub struct MqttCfg {
     pub config_path: String,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct WebsocketCfg {
     pub enable: bool,
     pub host: String,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct IbeaconCfg {
     pub enable: bool,
     pub filter_duration: u64,
     pub allowed_uuid_filter_path: String,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct SerialCfg {
     pub enable: bool,
     pub device_name: String,
@@ -38,7 +38,7 @@ pub struct SerialCfg {
     pub timeout: u64,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct TextFileCfg {
     pub enable: bool,
     pub target_file_path: String,
@@ -53,18 +53,18 @@ pub struct TextFileCfg {
     pub remove_all_folder: bool,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct CameraCfg {
     pub enable: bool,
     pub capture_interval_sec: u64,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct GrpcCfg {
     pub host: String,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct EmailCfg {
     pub enable: bool,
     pub host_addr: String,
@@ -87,7 +87,7 @@ pub struct EmailCfg {
     pub tls_require: bool,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 #[allow(dead_code)]
 pub struct BjigCfg {
     pub enable: bool,
@@ -97,7 +97,7 @@ pub struct BjigCfg {
     pub action_cooldown_sec: u64,
 }
 
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct TcpCfg {
     pub enable: bool,
     pub host: String,
@@ -105,7 +105,7 @@ pub struct TcpCfg {
     pub buffer_size: usize,
 }
 
-#[derive (Clone)]
+#[derive(Clone)]
 #[allow(dead_code)]
 pub struct Direct4bCfg {
     pub enable: bool,
@@ -153,18 +153,13 @@ impl Default for Direct4bCfg {
 
         Direct4bCfg {
             enable: direct4b_enable,
-            talk_id: env::var("KRKNC_DIRECT4B_TALK_ID")
-                .unwrap_or_default(),
-            access_token: env::var("KRKNC_DIRECT4B_ACCESS_TOKEN")
-                .unwrap_or_default(),
+            talk_id: env::var("KRKNC_DIRECT4B_TALK_ID").unwrap_or_default(),
+            access_token: env::var("KRKNC_DIRECT4B_ACCESS_TOKEN").unwrap_or_default(),
             api_base_url: env::var("KRKNC_DIRECT4B_API_BASE_URL")
                 .unwrap_or("https://restapi.direct4b.com".to_string()),
-            cron: env::var("KRKNC_DIRECT4B_CRON")
-                .unwrap_or("0 0 * * * *".to_string()),
-            timezone: env::var("KRKNC_DIRECT4B_TIMEZONE")
-                .unwrap_or("Asia/Tokyo".to_string()),
-            period: env::var("KRKNC_DIRECT4B_PERIOD")
-                .unwrap_or("1hour".to_string()),
+            cron: env::var("KRKNC_DIRECT4B_CRON").unwrap_or("0 0 * * * *".to_string()),
+            timezone: env::var("KRKNC_DIRECT4B_TIMEZONE").unwrap_or("Asia/Tokyo".to_string()),
+            period: env::var("KRKNC_DIRECT4B_PERIOD").unwrap_or("1hour".to_string()),
             // The message list API caps a single request at 100 messages.
             page_size: env::var("KRKNC_DIRECT4B_PAGE_SIZE")
                 .unwrap_or("100".to_string())
@@ -204,8 +199,7 @@ impl Default for EmailCfg {
     fn default() -> Self {
         let mut email_enable = false;
         // Enable if any email-specific env var is set
-        if env::var("KRKNC_EMAIL_HOST_ADDR").is_ok()
-            || env::var("KRKNC_EMAIL_SMTP_PORT").is_ok() {
+        if env::var("KRKNC_EMAIL_HOST_ADDR").is_ok() || env::var("KRKNC_EMAIL_SMTP_PORT").is_ok() {
             email_enable = true;
         }
 
@@ -226,8 +220,7 @@ impl Default for EmailCfg {
 
         EmailCfg {
             enable: email_enable,
-            host_addr: env::var("KRKNC_EMAIL_HOST_ADDR")
-                .unwrap_or("0.0.0.0".to_string()),
+            host_addr: env::var("KRKNC_EMAIL_HOST_ADDR").unwrap_or("0.0.0.0".to_string()),
             smtp_port: env::var("KRKNC_EMAIL_SMTP_PORT")
                 .unwrap_or("587".to_string())
                 .parse::<u16>()
@@ -240,8 +233,7 @@ impl Default for EmailCfg {
                 .unwrap_or("5242880".to_string())
                 .parse::<usize>()
                 .unwrap_or(5242880), // 5MB
-            domain: env::var("KRKNC_EMAIL_DOMAIN")
-                .unwrap_or("localhost".to_string()),
+            domain: env::var("KRKNC_EMAIL_DOMAIN").unwrap_or("localhost".to_string()),
             auth_required: env::var("KRKNC_EMAIL_AUTH_REQUIRED")
                 .unwrap_or("false".to_string())
                 .parse::<bool>()
@@ -261,8 +253,7 @@ impl Default for EmailCfg {
     }
 }
 
-
-#[derive (Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct CollectorCfg {
     pub webhook: WebhookCfg,
     pub mqtt: MqttCfg,
@@ -325,13 +316,17 @@ impl Default for CollectorCfg {
             webhook: WebhookCfg {
                 enable: webhook_enable,
                 path: env::var("KRKNC_WEBHOOK_PATH").unwrap_or("/webhook".to_string()),
-                port: env::var("KRKNC_WEBHOOK_PORT").unwrap_or("2792".to_string()).parse::<u16>().unwrap(),
+                port: env::var("KRKNC_WEBHOOK_PORT")
+                    .unwrap_or("2792".to_string())
+                    .parse::<u16>()
+                    .unwrap(),
             },
             mqtt: MqttCfg {
                 enable: mqtt_enable,
                 //host: env::var("KRKNC_MQTT_HOST").unwrap_or("127.0.0.1:1883".to_string()),
                 topic: env::var("KRKNC_MQTT_TOPIC").unwrap_or("kraken".to_string()),
-                config_path: env::var("KRKNC_MQTT_CONFIG_PATH").unwrap_or("config/mqttd.conf".to_string()),
+                config_path: env::var("KRKNC_MQTT_CONFIG_PATH")
+                    .unwrap_or("config/mqttd.conf".to_string()),
             },
             websocket: WebsocketCfg {
                 enable: websocket_enable,
@@ -339,46 +334,99 @@ impl Default for CollectorCfg {
             },
             ibeacon: IbeaconCfg {
                 enable: ibeacon_enable,
-                filter_duration: env::var("KRKNC_IBEACON_FILTER_DURATION").unwrap_or("1".to_string()).parse::<u64>().unwrap(),
-                allowed_uuid_filter_path: env::var("KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH").unwrap_or("config/allowed_uuids.yml".to_string()),
+                filter_duration: env::var("KRKNC_IBEACON_FILTER_DURATION")
+                    .unwrap_or("1".to_string())
+                    .parse::<u64>()
+                    .unwrap(),
+                allowed_uuid_filter_path: env::var("KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH")
+                    .unwrap_or("config/allowed_uuids.yml".to_string()),
             },
             serial: SerialCfg {
                 enable: serial_enable,
                 device_name: env::var("KRKNC_SERIAL_DEVICE_NAME").unwrap_or("unknown".to_string()),
                 port: env::var("KRKNC_SERIAL_PORT").unwrap_or("/dev/ttyACM0".to_string()),
-                baudrate: env::var("KRKNC_SERIAL_BAUDRATE").unwrap_or("9600".to_string()).parse::<u32>().unwrap(),
-                timeout: env::var("KRKNC_SERIAL_TIMEOUT_SEC").unwrap_or("10".to_string()).parse::<u64>().unwrap(),
+                baudrate: env::var("KRKNC_SERIAL_BAUDRATE")
+                    .unwrap_or("9600".to_string())
+                    .parse::<u32>()
+                    .unwrap(),
+                timeout: env::var("KRKNC_SERIAL_TIMEOUT_SEC")
+                    .unwrap_or("10".to_string())
+                    .parse::<u64>()
+                    .unwrap(),
             },
             text_file: TextFileCfg {
                 enable: textfile_enable,
-                target_file_path: env::var("KRKNC_TEXTFILE_TARGET_FILE_PATH").unwrap_or("data/data.txt".to_string()),
-                monitor_dir_path: env::var("KRKNC_TEXTFILE_MONITOR_DIR_PATH").unwrap_or("data/".to_string()),
-                interval_sec: env::var("KRKNC_TEXTFILE_GET_INTERVAL_SEC").unwrap_or("10".to_string()).parse::<u64>().unwrap(),
-                monitoring_mode: env::var("KRKNC_TEXTFILE_MONITORING_MODE").unwrap_or("time_interval".to_string()),
-                allow_create: env::var("KRKNC_TEXTFILE_ALLOW_CREATE").unwrap_or("true".to_string()).parse::<bool>().unwrap(),
-                allow_modify: env::var("KRKNC_TEXTFILE_ALLOW_MODIFY").unwrap_or("true".to_string()).parse::<bool>().unwrap(),
-                remove_created: env::var("KRKNC_TEXTFILE_REMOVE_CREATED_FILE_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
-                remove_except_modified: env::var("KRKNC_TEXTFILE_REMOVE_FILES_EXCEPT_MODIFIED_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
-                remove_all_files: env::var("KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
-                remove_all_folder: env::var("KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ").unwrap_or("false".to_string()).parse::<bool>().unwrap(),
+                target_file_path: env::var("KRKNC_TEXTFILE_TARGET_FILE_PATH")
+                    .unwrap_or("data/data.txt".to_string()),
+                monitor_dir_path: env::var("KRKNC_TEXTFILE_MONITOR_DIR_PATH")
+                    .unwrap_or("data/".to_string()),
+                interval_sec: env::var("KRKNC_TEXTFILE_GET_INTERVAL_SEC")
+                    .unwrap_or("10".to_string())
+                    .parse::<u64>()
+                    .unwrap(),
+                monitoring_mode: env::var("KRKNC_TEXTFILE_MONITORING_MODE")
+                    .unwrap_or("time_interval".to_string()),
+                allow_create: env::var("KRKNC_TEXTFILE_ALLOW_CREATE")
+                    .unwrap_or("true".to_string())
+                    .parse::<bool>()
+                    .unwrap(),
+                allow_modify: env::var("KRKNC_TEXTFILE_ALLOW_MODIFY")
+                    .unwrap_or("true".to_string())
+                    .parse::<bool>()
+                    .unwrap(),
+                remove_created: env::var("KRKNC_TEXTFILE_REMOVE_CREATED_FILE_AFTER_READ")
+                    .unwrap_or("false".to_string())
+                    .parse::<bool>()
+                    .unwrap(),
+                remove_except_modified: env::var(
+                    "KRKNC_TEXTFILE_REMOVE_FILES_EXCEPT_MODIFIED_AFTER_READ",
+                )
+                .unwrap_or("false".to_string())
+                .parse::<bool>()
+                .unwrap(),
+                remove_all_files: env::var("KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ")
+                    .unwrap_or("false".to_string())
+                    .parse::<bool>()
+                    .unwrap(),
+                remove_all_folder: env::var("KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ")
+                    .unwrap_or("false".to_string())
+                    .parse::<bool>()
+                    .unwrap(),
             },
             camera: CameraCfg {
                 enable: camera_enable,
-                capture_interval_sec: env::var("KRKNC_CAMERA_CAPTURE_INTERVAL_SEC").unwrap_or("5".to_string()).parse::<u64>().unwrap(),
+                capture_interval_sec: env::var("KRKNC_CAMERA_CAPTURE_INTERVAL_SEC")
+                    .unwrap_or("5".to_string())
+                    .parse::<u64>()
+                    .unwrap(),
             },
             email: EmailCfg::default(),
             bjig: BjigCfg {
                 enable: bjig_enable,
-                device_path: env::var("KRKNC_BJIG_DEVICE_PATH").unwrap_or("/dev/ttyACM0".to_string()),
-                cli_bin_path: env::var("KRKNC_BJIG_CLI_BIN_PATH").unwrap_or("./bin/bjig".to_string()),
-                data_timeout_sec: env::var("KRKNC_BJIG_DATA_TIMEOUT_SEC").unwrap_or("300".to_string()).parse::<u64>().unwrap(),
-                action_cooldown_sec: env::var("KRKNC_BJIG_ACTION_COOLDOWN_SEC").unwrap_or("30".to_string()).parse::<u64>().unwrap(),
+                device_path: env::var("KRKNC_BJIG_DEVICE_PATH")
+                    .unwrap_or("/dev/ttyACM0".to_string()),
+                cli_bin_path: env::var("KRKNC_BJIG_CLI_BIN_PATH")
+                    .unwrap_or("./bin/bjig".to_string()),
+                data_timeout_sec: env::var("KRKNC_BJIG_DATA_TIMEOUT_SEC")
+                    .unwrap_or("300".to_string())
+                    .parse::<u64>()
+                    .unwrap(),
+                action_cooldown_sec: env::var("KRKNC_BJIG_ACTION_COOLDOWN_SEC")
+                    .unwrap_or("30".to_string())
+                    .parse::<u64>()
+                    .unwrap(),
             },
             tcp: TcpCfg {
                 enable: tcp_enable,
                 host: env::var("KRKNC_TCP_HOST").unwrap_or("0.0.0.0".to_string()),
-                port: env::var("KRKNC_TCP_PORT").unwrap_or("9000".to_string()).parse::<u16>().unwrap_or(9000),
-                buffer_size: env::var("KRKNC_TCP_BUFFER_SIZE").unwrap_or("4096".to_string()).parse::<usize>().unwrap_or(4096),
+                port: env::var("KRKNC_TCP_PORT")
+                    .unwrap_or("9000".to_string())
+                    .parse::<u16>()
+                    .unwrap_or(9000),
+                buffer_size: env::var("KRKNC_TCP_BUFFER_SIZE")
+                    .unwrap_or("4096".to_string())
+                    .parse::<usize>()
+                    .unwrap_or(4096),
             },
             direct4b: Direct4bCfg::default(),
         }

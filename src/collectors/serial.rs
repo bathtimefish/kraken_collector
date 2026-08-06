@@ -1,10 +1,10 @@
-use std::io::{self};
-use std::time::Duration;
-use serde_json::json;
+use super::grpc;
 use super::Collector;
 use super::CollectorFactory;
-use super::grpc;
 use crate::config::CollectorCfg;
+use serde_json::json;
+use std::io::{self};
+use std::time::Duration;
 
 #[derive(Debug, serde::Serialize)]
 struct MetaData {
@@ -27,7 +27,9 @@ impl SerialFactory {
 
 impl CollectorFactory for SerialFactory {
     fn create(&self) -> Box<dyn Collector> {
-        Box::new(Serial { config: self.config.clone() })
+        Box::new(Serial {
+            config: self.config.clone(),
+        })
     }
 }
 
@@ -49,7 +51,10 @@ impl Collector for Serial {
         let port = serialport::new(&port_name, baud_rate)
             .timeout(Duration::from_millis(timeout_sec))
             .open();
-        debug!("Connecting to serial device on {} at {} baud:", &port_name, &baud_rate);
+        debug!(
+            "Connecting to serial device on {} at {} baud:",
+            &port_name, &baud_rate
+        );
 
         match port {
             Ok(mut port) => {
@@ -68,7 +73,8 @@ impl Collector for Serial {
                                     "application/octet-stream",
                                     &serde_json::to_string(&meta_json).unwrap(),
                                     &serial_buf[..t],
-                                ).await;
+                                )
+                                .await;
                                 match sent {
                                     Ok(msg) => debug!("Sent message to grpc server: {:?}", msg),
                                     Err(msg) => error!("Failed to send to grpc: {:?}", msg),
@@ -87,5 +93,4 @@ impl Collector for Serial {
         }
         Ok(())
     }
-
 }

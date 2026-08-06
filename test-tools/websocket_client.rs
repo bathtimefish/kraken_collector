@@ -1,7 +1,7 @@
-use tokio_tungstenite::{connect_async, tungstenite::Message};
 use futures::{SinkExt, StreamExt};
-use tokio::io::{self, AsyncBufReadExt, BufReader};
 use std::io::{self as std_io, Write};
+use tokio::io::{self, AsyncBufReadExt, BufReader};
+use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 const CONNECTION: &str = "ws://127.0.0.1:2794";
 
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(0) => break, // EOF
             Ok(_) => {
                 let trimmed = line.trim();
-                
+
                 let message = match trimmed {
                     "/close" => {
                         let _ = ws_sender.send(Message::Close(None)).await;
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("Error sending message: {}", e);
                     break;
                 }
-                
+
                 print!("> ");
                 std_io::stdout().flush().unwrap();
             }
@@ -86,6 +86,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Wait for receive task to complete
     let _ = receive_task.await;
     println!("Exited");
-    
+
     Ok(())
 }
