@@ -8,7 +8,7 @@ edition = "2021"
 [features]
 default = []
 bjig = []
-direct4b = ["dep:reqwest", "dep:tokio-cron-scheduler", "dep:chrono-tz"]
+direct4b = []
 
 [profile.dev]
 opt-level = 0
@@ -72,12 +72,6 @@ mailin-embedded = "0.8"
 mailparse = "0.16"
 base64 = "0.22"
 chrono = "0.4"
-# direct4b collector (optional, enabled by the `direct4b` feature).
-# rustls-tls is used instead of native-tls so that cross compiling for
-# Raspberry Pi and similar targets does not pull in a system OpenSSL.
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
-tokio-cron-scheduler = { version = "0.15", optional = true }
-chrono-tz = { version = "0.10", optional = true }
 
 [build-dependencies]
 tonic-build = { version = "0.12.2", features = ["prost"]}
