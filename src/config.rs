@@ -105,6 +105,101 @@ pub struct TcpCfg {
     pub buffer_size: usize,
 }
 
+#[derive (Clone)]
+#[allow(dead_code)]
+pub struct Direct4bCfg {
+    pub enable: bool,
+    pub talk_id: String,
+    pub access_token: String,
+    pub api_base_url: String,
+    pub cron: String,
+    pub timezone: String,
+    pub period: String,
+    pub page_size: usize,
+    pub max_pages: usize,
+    pub max_batch_size: usize,
+    pub request_interval_ms: u64,
+    pub request_timeout_sec: u64,
+    pub max_retries: u32,
+    pub run_on_start: bool,
+}
+
+// Debug is implemented by hand so that the access token never reaches the logs.
+impl std::fmt::Debug for Direct4bCfg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Direct4bCfg")
+            .field("enable", &self.enable)
+            .field("talk_id", &self.talk_id)
+            .field("access_token", &"***")
+            .field("api_base_url", &self.api_base_url)
+            .field("cron", &self.cron)
+            .field("timezone", &self.timezone)
+            .field("period", &self.period)
+            .field("page_size", &self.page_size)
+            .field("max_pages", &self.max_pages)
+            .field("max_batch_size", &self.max_batch_size)
+            .field("request_interval_ms", &self.request_interval_ms)
+            .field("request_timeout_sec", &self.request_timeout_sec)
+            .field("max_retries", &self.max_retries)
+            .field("run_on_start", &self.run_on_start)
+            .finish()
+    }
+}
+
+impl Default for Direct4bCfg {
+    fn default() -> Self {
+        // Setting the target talk id is what enables the direct4b collector.
+        let direct4b_enable = env::var("KRKNC_DIRECT4B_TALK_ID").is_ok();
+
+        Direct4bCfg {
+            enable: direct4b_enable,
+            talk_id: env::var("KRKNC_DIRECT4B_TALK_ID")
+                .unwrap_or_default(),
+            access_token: env::var("KRKNC_DIRECT4B_ACCESS_TOKEN")
+                .unwrap_or_default(),
+            api_base_url: env::var("KRKNC_DIRECT4B_API_BASE_URL")
+                .unwrap_or("https://restapi.direct4b.com".to_string()),
+            cron: env::var("KRKNC_DIRECT4B_CRON")
+                .unwrap_or("0 0 * * * *".to_string()),
+            timezone: env::var("KRKNC_DIRECT4B_TIMEZONE")
+                .unwrap_or("Asia/Tokyo".to_string()),
+            period: env::var("KRKNC_DIRECT4B_PERIOD")
+                .unwrap_or("1hour".to_string()),
+            // The message list API caps a single request at 100 messages.
+            page_size: env::var("KRKNC_DIRECT4B_PAGE_SIZE")
+                .unwrap_or("100".to_string())
+                .parse::<usize>()
+                .unwrap_or(100)
+                .clamp(1, 100),
+            max_pages: env::var("KRKNC_DIRECT4B_MAX_PAGES")
+                .unwrap_or("50".to_string())
+                .parse::<usize>()
+                .unwrap_or(50),
+            max_batch_size: env::var("KRKNC_DIRECT4B_MAX_BATCH_SIZE")
+                .unwrap_or("500".to_string())
+                .parse::<usize>()
+                .unwrap_or(500),
+            // The message list API is rate limited to 12 requests per minute.
+            request_interval_ms: env::var("KRKNC_DIRECT4B_REQUEST_INTERVAL_MS")
+                .unwrap_or("5000".to_string())
+                .parse::<u64>()
+                .unwrap_or(5000),
+            request_timeout_sec: env::var("KRKNC_DIRECT4B_REQUEST_TIMEOUT_SEC")
+                .unwrap_or("30".to_string())
+                .parse::<u64>()
+                .unwrap_or(30),
+            max_retries: env::var("KRKNC_DIRECT4B_MAX_RETRIES")
+                .unwrap_or("3".to_string())
+                .parse::<u32>()
+                .unwrap_or(3),
+            run_on_start: env::var("KRKNC_DIRECT4B_RUN_ON_START")
+                .unwrap_or("false".to_string())
+                .parse::<bool>()
+                .unwrap_or(false),
+        }
+    }
+}
+
 impl Default for EmailCfg {
     fn default() -> Self {
         let mut email_enable = false;
@@ -181,6 +276,8 @@ pub struct CollectorCfg {
     #[allow(dead_code)]
     pub bjig: BjigCfg,
     pub tcp: TcpCfg,
+    #[allow(dead_code)]
+    pub direct4b: Direct4bCfg,
 }
 
 impl Default for CollectorCfg {
@@ -283,6 +380,7 @@ impl Default for CollectorCfg {
                 port: env::var("KRKNC_TCP_PORT").unwrap_or("9000".to_string()).parse::<u16>().unwrap_or(9000),
                 buffer_size: env::var("KRKNC_TCP_BUFFER_SIZE").unwrap_or("4096".to_string()).parse::<usize>().unwrap_or(4096),
             },
+            direct4b: Direct4bCfg::default(),
         }
     }
 }
