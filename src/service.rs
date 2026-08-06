@@ -17,6 +17,9 @@ use crate::{
 #[cfg(feature = "bjig")]
 use crate::collectors::bjig::BjigFactory;
 
+#[cfg(feature = "direct4b")]
+use crate::collectors::direct4b::Direct4bFactory;
+
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
     let factories: Vec<Box<dyn CollectorFactory>> = vec![
@@ -31,6 +34,8 @@ pub async fn start(config: &CollectorCfg) -> Result<(), anyhow::Error> {
         #[cfg(feature = "bjig")]
         Box::new(BjigFactory::new(config.clone())),
         Box::new(TcpFactory::new(config.clone())),
+        #[cfg(feature = "direct4b")]
+        Box::new(Direct4bFactory::new(config.clone())),
     ];
 
     let mut handles = Vec::new();

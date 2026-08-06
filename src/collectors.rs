@@ -21,3 +21,5 @@ pub mod email;
 #[cfg(feature = "bjig")]
 pub mod bjig;
 pub mod tcp;
+#[cfg(feature = "direct4b")]
+pub mod direct4b;
