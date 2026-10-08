@@ -142,6 +142,8 @@ Collectorの機能は環境変数で設定します。現在以下の環境変�
 - `KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ`
 - `KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ`
 - `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`
+- `KRKNC_CAMERA_NAME`
+- `KRKNC_CAMERA_JPEG_QUALITY`
 - `KRKNC_EMAIL_HOST_ADDR`
 - `KRKNC_EMAIL_SMTP_PORT`
 - `KRKNC_EMAIL_MAX_MESSAGE_SIZE`
@@ -251,10 +253,33 @@ KRKNC_SERIAL_PORT=/dev/ttyACM0
 
 ## Camera
 Camera機能は `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC` を設定することで利用可能となります。
+
+撮影したフレームは JPEG にしてブローカーに送ります。
+
+| 項目 | 内容 |
+|---|---|
+| `content_type` | `image/jpeg` |
+| `metadata` | `{"format": "image/jpeg", "camera_name": "...", "width": 1920, "height": 1080}`（`width` / `height` は送ったフレームの大きさ） |
+| `payload` | JPEG のバイト列 |
+
+> 3.0.0 で `payload` を無圧縮の RGB24 から JPEG に変更しました。2.x の `payload` を RGB として扱っていたブローカーは、JPEG として読むように変更してください。
+
 ### KRKNC_CAMERA_CAPTURE_INTERVAL_SEC
 カメラスナップショットの間隔を秒単位で設定します。多くの場合、次のような設定で良いはずです。
 ```bash
 KRKNC_CAMERA_CAPTURE_INTERVAL_SEC=5
+```
+
+### KRKNC_CAMERA_NAME
+`metadata` の `camera_name` に入れる名前を設定します（省略時はカメラの製品名）。同じ型番のカメラを付けた複数の collector をブローカー側で区別するときに使います。
+```bash
+KRKNC_CAMERA_NAME=dock
+```
+
+### KRKNC_CAMERA_JPEG_QUALITY
+JPEG の品質を 1〜100 で設定します（デフォルト: 85）。小さくするとデータ量が減り、画質が下がります。
+```bash
+KRKNC_CAMERA_JPEG_QUALITY=85
 ```
 
 ## Email (SMTP Server)
