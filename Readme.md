@@ -140,6 +140,8 @@ The functionality of the collector is configured through environment variables. 
 - `KRKNC_TEXTFILE_REMOVE_ALL_FILES_AFTER_READ`
 - `KRKNC_TEXTFILE_REMOVE_ALL_FOLDER_AFTER_READ`
 - `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`
+- `KRKNC_CAMERA_NAME`
+- `KRKNC_CAMERA_JPEG_QUALITY`
 - `KRKNC_EMAIL_HOST_ADDR`
 - `KRKNC_EMAIL_SMTP_PORT`
 - `KRKNC_EMAIL_MAX_MESSAGE_SIZE`
@@ -248,10 +250,33 @@ Remove entire folder after reading (default: false).
 
 ## Camera
 The Camera feature is enabled by setting `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`.
+
+Captured frames are sent to the broker as JPEG.
+
+| Field | Content |
+|---|---|
+| `content_type` | `image/jpeg` |
+| `metadata` | `{"format": "image/jpeg", "camera_name": "...", "width": 1920, "height": 1080}` (`width` / `height` are the size of the frame sent) |
+| `payload` | JPEG bytes |
+
+> In 3.0.0 the `payload` changed from uncompressed RGB24 to JPEG. Brokers that treated the 2.x `payload` as RGB must read it as JPEG instead.
+
 ### KRKNC_CAMERA_CAPTURE_INTERVAL_SEC
 Set the interval in seconds between camera snapshots. In most cases, the following setting should be sufficient:
 ```bash
 KRKNC_CAMERA_CAPTURE_INTERVAL_SEC=5
+```
+
+### KRKNC_CAMERA_NAME
+Set the name sent as `camera_name` in the `metadata` (default: the camera's product name). Use it to tell apart collectors that have cameras of the same model.
+```bash
+KRKNC_CAMERA_NAME=dock
+```
+
+### KRKNC_CAMERA_JPEG_QUALITY
+Set the JPEG quality from 1 to 100 (default: 85). A lower quality makes the data smaller and the picture rougher.
+```bash
+KRKNC_CAMERA_JPEG_QUALITY=85
 ```
 
 ## Email (SMTP Server)

@@ -57,6 +57,10 @@ pub struct TextFileCfg {
 pub struct CameraCfg {
     pub enable: bool,
     pub capture_interval_sec: u64,
+    /// Name sent as `camera_name` (KRKNC_CAMERA_NAME). The camera's own name when not set.
+    pub name: Option<String>,
+    /// JPEG quality of the frames, 1-100 (KRKNC_CAMERA_JPEG_QUALITY, default 85)
+    pub jpeg_quality: u8,
 }
 
 #[derive(Clone, Debug)]
@@ -399,6 +403,14 @@ impl Default for CollectorCfg {
                     .unwrap_or("5".to_string())
                     .parse::<u64>()
                     .unwrap(),
+                name: env::var("KRKNC_CAMERA_NAME")
+                    .ok()
+                    .filter(|n| !n.trim().is_empty()),
+                jpeg_quality: env::var("KRKNC_CAMERA_JPEG_QUALITY")
+                    .unwrap_or("85".to_string())
+                    .parse::<u8>()
+                    .unwrap()
+                    .clamp(1, 100),
             },
             email: EmailCfg::default(),
             bjig: BjigCfg {
