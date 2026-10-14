@@ -49,7 +49,7 @@ impl Collector for Serial {
         let timeout_sec = self.config.serial.timeout;
 
         let port = serialport::new(&port_name, baud_rate)
-            .timeout(Duration::from_millis(timeout_sec))
+            .timeout(Duration::from_secs(timeout_sec))
             .open();
         debug!(
             "Connecting to serial device on {} at {} baud:",

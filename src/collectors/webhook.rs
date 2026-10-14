@@ -29,9 +29,10 @@ async fn post_webhook(
     req: Request<IncomingBody>,
     grpc_config: Arc<Mutex<GrpcCfg>>,
 ) -> Result<Response<BoxBody>, anyhow::Error> {
+    let req_path = req.uri().path().to_string();
     let whole_body = req.collect().await?.aggregate();
     let body: serde_json::Value = serde_json::from_reader(whole_body.reader())?;
-    debug!("POST /webhook: {}", &body);
+    debug!("POST {}: {}", req_path, body);
     let json_bytes = serde_json::to_vec(&body)?;
 
     let grpc_config = grpc_config.lock().await;
@@ -60,10 +61,13 @@ async fn post_webhook(
 async fn handle_request(
     req: Request<IncomingBody>,
     grpc_config: Arc<Mutex<GrpcCfg>>,
+    webhook_path: Arc<str>,
 ) -> Result<Response<BoxBody>, anyhow::Error> {
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/") => Ok(Response::new(full("OK"))),
-        (&Method::POST, "/webhook") => Ok(post_webhook(req, grpc_config.clone()).await.unwrap()),
+        (&Method::POST, path) if path == webhook_path.as_ref() => {
+            Ok(post_webhook(req, grpc_config.clone()).await.unwrap())
+        }
         _ => {
             let response = Response::builder()
                 .status(StatusCode::NOT_FOUND)
@@ -110,16 +114,18 @@ impl Collector for Webhook {
         let config = self.config.webhook.clone();
         let grpc_config = Arc::new(Mutex::new(self.config.grpc.clone())); // Arcでラップ
         let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
+        let webhook_path: Arc<str> = Arc::from(config.path.as_str());
         let listener = TcpListener::bind(&addr).await?;
-        debug!("Webhook server is listening on http://{}", addr);
+        debug!("Webhook server is listening on http://{}{}", addr, webhook_path);
 
         loop {
             let (stream, _) = listener.accept().await?;
             let io = TokioIo::new(stream);
             let grpc_config = grpc_config.clone(); // Arc をクローンして共有参照
+            let webhook_path = webhook_path.clone();
             tokio::task::spawn(async move {
                 let service = service_fn(
-                    move |req| handle_request(req, grpc_config.clone()), // grpc_config をクローンして渡す
+                    move |req| handle_request(req, grpc_config.clone(), webhook_path.clone()), // grpc_config をクローンして渡す
                 );
                 if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
                     error!("Failed to serve connection: {:?}", err);

@@ -120,11 +120,9 @@ Collectorの機能は環境変数で設定します。現在以下の環境変�
 - `KRKNC_BROKER_HOST`
 - `KRKNC_WEBHOOK_PATH`
 - `KRKNC_WEBHOOK_PORT`
-- `KRKNC_MQTT_HOST`
 - `KRKNC_MQTT_TOPIC`
 - `KRKNC_MQTT_CONFIG_PATH`
 - `KRKNC_WEBSOCKET_HOST`
-- `KRKNC_WEBSOCKET_SUB_PROTOCOL`
 - `KRKNC_IBEACON_FILTER_DURATION_SEC`
 - `KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH`
 - `KRKNC_SERIAL_DEVICE_NAME`
@@ -172,30 +170,22 @@ Webhook機能は `KRKNC_WEBHOOK_PATH` `KRKNC_WEBHOOK_PORT`を設定すること�
 Webhook URLのパスを設定します。`KRKNC_WEBHOOK_PATH=webhook` の場合、 `http://localhost/webhook` がWebhook URLとなります。
 ### KRKNC_WEBHOOK_PORT
 
-Webhookのポート番号を設定します。
+Webhookのポート番号を設定します（既定: 2792）。
 ## MQTT
-MQTT Broker機能は `KRKNC_MQTT_HOST` `KRKNC_MQTT_TOPIC` `KRKNC_MQTT_CONFIG_PATH` を設定することで利用可能となります。
-### KRKNC_MQTT_HOST
-MQTT Brokerのホストアドレスを指定します。多くの場合、次のような設定で良いはずです。
-
-```bash
-KRKNC_MQTT_HOST=0.0.0.0:1883
-```
+MQTT Broker機能は `KRKNC_MQTT_CONFIG_PATH`（と `KRKNC_MQTT_TOPIC`）を設定することで利用可能となります。MQTT Brokerの待ち受けアドレスは環境変数ではなく、rumqttdのコンフィグファイル（`[v4.1]` の `listen`、例: `0.0.0.0:1883`）で設定します。
 ### KRKNC_MQTT_TOPIC
 MQTTトピック名を設定します。
 
 ### KRKNC_MQTT_CONFIG_PATH
 CollectorのMQTT Broker機能は[rumqttd](https://github.com/bytebeamio/rumqtt/tree/main/rumqttd)をベースにしています。`KRKNC_MQTT_CONFIG_PATH`はrumqttdのカスタムコンフィグファイルのパスを指定します。
 ## Websocket
-Websocket Server機能は `KRKNC_WEBSOCKET_HOST` `KRKNC_WEBSOCKET_SUB_PROTOCOL` を設定することで利用可能となります。
+Websocket Server機能は `KRKNC_WEBSOCKET_HOST` を設定することで利用可能となります。
 ### KRKNC_WEBSOCKET_HOST
 Websocket Serverのホストアドレスを指定します。多くの場合、次のような設定で良いはずです。
 
 ```bash
 KRKNC_WEBSOCKET_HOST=0.0.0.0:2794
 ```
-### KRKNC_WEBSOCKET_SUB_PROTOCOL
-Websocket Serverのサブプロトコル名を指定します。
 
 ## iBeacon
 iBeacon機能は `KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH` を設定することで利用可能となります。
