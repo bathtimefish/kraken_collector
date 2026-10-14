@@ -3,7 +3,6 @@ use std::env;
 #[derive(Clone, Debug)]
 pub struct WebhookCfg {
     pub enable: bool,
-    #[allow(dead_code)]
     pub path: String,
     pub port: u16,
 }
@@ -275,6 +274,17 @@ pub struct CollectorCfg {
     pub direct4b: Direct4bCfg,
 }
 
+/// The webhook URL path from KRKNC_WEBHOOK_PATH: a leading "/" is added when it is missing
+/// (the README's example is `KRKNC_WEBHOOK_PATH=webhook`, which serves `/webhook`)
+fn webhook_path(path: String) -> String {
+    let trimmed = path.trim();
+    if trimmed.starts_with('/') {
+        trimmed.to_string()
+    } else {
+        format!("/{}", trimmed)
+    }
+}
+
 impl Default for CollectorCfg {
     fn default() -> Self {
         let mut webhook_enable = false;
@@ -319,7 +329,7 @@ impl Default for CollectorCfg {
             },
             webhook: WebhookCfg {
                 enable: webhook_enable,
-                path: env::var("KRKNC_WEBHOOK_PATH").unwrap_or("/webhook".to_string()),
+                path: webhook_path(env::var("KRKNC_WEBHOOK_PATH").unwrap_or("/webhook".to_string())),
                 port: env::var("KRKNC_WEBHOOK_PORT")
                     .unwrap_or("2792".to_string())
                     .parse::<u16>()
@@ -338,7 +348,7 @@ impl Default for CollectorCfg {
             },
             ibeacon: IbeaconCfg {
                 enable: ibeacon_enable,
-                filter_duration: env::var("KRKNC_IBEACON_FILTER_DURATION")
+                filter_duration: env::var("KRKNC_IBEACON_FILTER_DURATION_SEC")
                     .unwrap_or("1".to_string())
                     .parse::<u64>()
                     .unwrap(),

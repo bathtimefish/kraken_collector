@@ -118,11 +118,9 @@ The functionality of the collector is configured through environment variables. 
 - `KRKNC_BROKER_HOST`
 - `KRKNC_WEBHOOK_PATH`
 - `KRKNC_WEBHOOK_PORT`
-- `KRKNC_MQTT_HOST`
 - `KRKNC_MQTT_TOPIC`
 - `KRKNC_MQTT_CONFIG_PATH`
 - `KRKNC_WEBSOCKET_HOST`
-- `KRKNC_WEBSOCKET_SUB_PROTOCOL`
 - `KRKNC_IBEACON_FILTER_DURATION_SEC`
 - `KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH`
 - `KRKNC_SERIAL_DEVICE_NAME`
@@ -169,15 +167,10 @@ The Webhook feature is enabled by setting `KRKNC_WEBHOOK_PATH` and `KRKNC_WEBHOO
 ### KRKNC_WEBHOOK_PATH
 Set the path for the webhook URL. For example, if `KRKNC_WEBHOOK_PATH=webhook`, the webhook URL will be `http://localhost/webhook`.
 ### KRKNC_WEBHOOK_PORT
-Specify the port number for the webhook.
+Specify the port number for the webhook (default: 2792).
 
 ## MQTT
-The MQTT Broker feature is enabled by setting `KRKNC_MQTT_HOST`, `KRKNC_MQTT_TOPIC`, and `KRKNC_MQTT_CONFIG_PATH`.
-### KRKNC_MQTT_HOST
-Specify the host address of the MQTT Broker. In most cases, the following setting should be sufficient:
-```bash
-KRKNC_MQTT_HOST=0.0.0.0:1883
-```
+The MQTT Broker feature is enabled by setting `KRKNC_MQTT_CONFIG_PATH` (and `KRKNC_MQTT_TOPIC`). The listen address of the MQTT Broker is set in the rumqttd configuration file (`listen` under `[v4.1]`, e.g. `0.0.0.0:1883`), not by an environment variable.
 ### KRKNC_MQTT_TOPIC
 Set the MQTT topic name.
 
@@ -185,14 +178,12 @@ Set the MQTT topic name.
 The MQTT Broker functionality of the collector is based on [rumqttd](https://github.com/bytebeamio/rumqtt/tree/main/rumqttd). `KRKNC_MQTT_CONFIG_PATH` specifies the path to the custom configuration file for rumqttd.
 
 ## Websocket
-The Websocket Server feature is enabled by setting `KRKNC_WEBSOCKET_HOST` and `KRKNC_WEBSOCKET_SUB_PROTOCOL`.
+The Websocket Server feature is enabled by setting `KRKNC_WEBSOCKET_HOST`.
 ### KRKNC_WEBSOCKET_HOST
 Specify the host address of the Websocket Server. In most cases, the following setting should be sufficient:
 ```bash
 KRKNC_WEBSOCKET_HOST=0.0.0.0:2794
 ```
-### KRKNC_WEBSOCKET_SUB_PROTOCOL
-Specify the sub-protocol name for the Websocket Server.
 
 ## iBeacon
 The iBeacon feature is enabled by setting `KRKNC_IBEACON_ALLOWED_UUID_FILTER_PATH`.
