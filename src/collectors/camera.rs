@@ -5,7 +5,7 @@ use crate::config::CollectorCfg;
 use image::codecs::jpeg::JpegEncoder;
 use image::ExtendedColorType;
 use nokhwa::pixel_format::RgbFormat;
-use nokhwa::utils::{ApiBackend, CameraIndex, RequestedFormat, RequestedFormatType};
+use nokhwa::utils::{ApiBackend, CameraInfo, RequestedFormat, RequestedFormatType};
 use nokhwa::{query, Camera};
 use serde_json::json;
 use std::thread;
@@ -53,6 +53,68 @@ fn camera_name(configured: Option<&str>, detected: &str) -> String {
     }
 }
 
+/// The cameras to try, in order: only the configured one when `KRKNC_CAMERA_INDEX` is set,
+/// otherwise all of them by index. On Linux a USB camera also adds a metadata-only node
+/// (e.g. /dev/video1 next to /dev/video0) that cannot be opened, so the first one listed
+/// is not necessarily usable.
+fn candidates(
+    mut cameras: Vec<CameraInfo>,
+    wanted: Option<u32>,
+) -> anyhow::Result<Vec<CameraInfo>> {
+    cameras.sort_by_key(|c| c.index().as_index().unwrap_or(u32::MAX));
+    let Some(wanted) = wanted else {
+        if cameras.is_empty() {
+            anyhow::bail!("No camera found");
+        }
+        return Ok(cameras);
+    };
+    let found: Vec<String> = cameras
+        .iter()
+        .map(|c| format!("{} ({})", c.index(), c.human_name()))
+        .collect();
+    match cameras
+        .into_iter()
+        .find(|c| c.index().as_index().ok() == Some(wanted))
+    {
+        Some(camera) => Ok(vec![camera]),
+        None => anyhow::bail!(
+            "camera {} (KRKNC_CAMERA_INDEX) not found; found: [{}]",
+            wanted,
+            found.join(", ")
+        ),
+    }
+}
+
+/// Opens the first camera that can stream.
+fn open_first(cameras: Vec<CameraInfo>) -> anyhow::Result<(CameraInfo, Camera)> {
+    let mut errors = Vec::new();
+    for camera_info in cameras {
+        debug!(
+            "Trying camera: {} (index: {:?})",
+            camera_info.human_name(),
+            camera_info.index()
+        );
+        let requested_format =
+            RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
+        let opened = Camera::new(camera_info.index().clone(), requested_format)
+            .map_err(|e| format!("Failed to initialize camera: {}", e))
+            .and_then(|mut camera| {
+                camera
+                    .open_stream()
+                    .map_err(|e| format!("Failed to open camera stream: {}", e))?;
+                Ok(camera)
+            });
+        match opened {
+            Ok(camera) => return Ok((camera_info, camera)),
+            Err(e) => {
+                debug!("Skipping camera {}: {}", camera_info.index(), e);
+                errors.push(format!("{}: {}", camera_info.index(), e));
+            }
+        }
+    }
+    anyhow::bail!("No camera could be opened ({})", errors.join("; "))
+}
+
 pub struct CameraCollector {
     config: CollectorCfg,
 }
@@ -90,30 +152,12 @@ impl Collector for CameraCollector {
         debug!("Querying available cameras...");
         let cameras = query(ApiBackend::Auto)
             .map_err(|e| anyhow::anyhow!("Failed to query cameras: {}", e))?;
-
-        let camera_info = cameras
-            .first()
-            .ok_or_else(|| anyhow::anyhow!("No camera found"))?;
-
-        debug!(
-            "Found camera: {} (index: {:?})",
+        let (camera_info, mut camera) = open_first(candidates(cameras, self.config.camera.index)?)?;
+        info!(
+            "Using camera: {} (index: {})",
             camera_info.human_name(),
             camera_info.index()
         );
-
-        // Open the same camera whose information was queried above
-        let camera_index: CameraIndex = camera_info.index().clone();
-        let requested_format =
-            RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
-
-        debug!("Initializing camera with index {:?}...", camera_index);
-        let mut camera = Camera::new(camera_index, requested_format)
-            .map_err(|e| anyhow::anyhow!("Failed to initialize camera: {}", e))?;
-
-        debug!("Opening camera stream...");
-        camera
-            .open_stream()
-            .map_err(|e| anyhow::anyhow!("Failed to open camera stream: {}", e))?;
 
         // Get camera format information after stream is opened
         let camera_format = camera.camera_format();
@@ -248,6 +292,41 @@ mod tests {
     #[test]
     fn a_wrong_buffer_size_is_an_error() {
         assert!(encode_jpeg(&[0; 10], 64, 48, 85).is_err());
+    }
+
+    fn camera(index: u32) -> CameraInfo {
+        CameraInfo::new(
+            &format!("cam{index}"),
+            "",
+            "",
+            nokhwa::utils::CameraIndex::Index(index),
+        )
+    }
+
+    fn indexes(cameras: &[CameraInfo]) -> Vec<u32> {
+        cameras
+            .iter()
+            .map(|c| c.index().as_index().unwrap())
+            .collect()
+    }
+
+    #[test]
+    fn all_cameras_are_tried_in_index_order() {
+        let found = candidates(vec![camera(1), camera(2), camera(0)], None).unwrap();
+        assert_eq!(indexes(&found), vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn only_the_configured_camera_is_tried() {
+        let found = candidates(vec![camera(1), camera(0)], Some(1)).unwrap();
+        assert_eq!(indexes(&found), vec![1]);
+    }
+
+    #[test]
+    fn a_missing_camera_is_an_error() {
+        assert!(candidates(vec![], None).is_err());
+        let e = candidates(vec![camera(1), camera(0)], Some(3)).unwrap_err();
+        assert!(e.to_string().contains("found: [0 (cam0), 1 (cam1)]"), "{e}");
     }
 
     #[test]

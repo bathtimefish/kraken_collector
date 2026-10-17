@@ -140,6 +140,7 @@ The functionality of the collector is configured through environment variables. 
 - `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`
 - `KRKNC_CAMERA_NAME`
 - `KRKNC_CAMERA_JPEG_QUALITY`
+- `KRKNC_CAMERA_INDEX`
 - `KRKNC_EMAIL_HOST_ADDR`
 - `KRKNC_EMAIL_SMTP_PORT`
 - `KRKNC_EMAIL_MAX_MESSAGE_SIZE`
@@ -268,6 +269,12 @@ KRKNC_CAMERA_NAME=dock
 Set the JPEG quality from 1 to 100 (default: 85). A lower quality makes the data smaller and the picture rougher.
 ```bash
 KRKNC_CAMERA_JPEG_QUALITY=85
+```
+
+### KRKNC_CAMERA_INDEX
+Sets the index of the camera to use (on Linux, the N of `/dev/videoN`). When not set, the cameras are tried in index order and the first one that opens is used. On Linux a USB camera adds a metadata-only device (e.g. `/dev/video1`) next to its video device (e.g. `/dev/video0`); it cannot capture frames and is skipped when this is not set. Set it to choose a camera when several are connected.
+```bash
+KRKNC_CAMERA_INDEX=0
 ```
 
 ## Email (SMTP Server)

@@ -60,6 +60,9 @@ pub struct CameraCfg {
     pub name: Option<String>,
     /// JPEG quality of the frames, 1-100 (KRKNC_CAMERA_JPEG_QUALITY, default 85)
     pub jpeg_quality: u8,
+    /// Index of the camera to use (KRKNC_CAMERA_INDEX; on Linux the N of /dev/videoN).
+    /// When not set, the cameras are tried in index order and the first that opens is used.
+    pub index: Option<u32>,
 }
 
 #[derive(Clone, Debug)]
@@ -329,7 +332,9 @@ impl Default for CollectorCfg {
             },
             webhook: WebhookCfg {
                 enable: webhook_enable,
-                path: webhook_path(env::var("KRKNC_WEBHOOK_PATH").unwrap_or("/webhook".to_string())),
+                path: webhook_path(
+                    env::var("KRKNC_WEBHOOK_PATH").unwrap_or("/webhook".to_string()),
+                ),
                 port: env::var("KRKNC_WEBHOOK_PORT")
                     .unwrap_or("2792".to_string())
                     .parse::<u16>()
@@ -421,6 +426,10 @@ impl Default for CollectorCfg {
                     .parse::<u8>()
                     .unwrap()
                     .clamp(1, 100),
+                index: env::var("KRKNC_CAMERA_INDEX")
+                    .ok()
+                    .filter(|i| !i.trim().is_empty())
+                    .map(|i| i.trim().parse::<u32>().unwrap()),
             },
             email: EmailCfg::default(),
             bjig: BjigCfg {

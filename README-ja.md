@@ -142,6 +142,7 @@ Collectorの機能は環境変数で設定します。現在以下の環境変�
 - `KRKNC_CAMERA_CAPTURE_INTERVAL_SEC`
 - `KRKNC_CAMERA_NAME`
 - `KRKNC_CAMERA_JPEG_QUALITY`
+- `KRKNC_CAMERA_INDEX`
 - `KRKNC_EMAIL_HOST_ADDR`
 - `KRKNC_EMAIL_SMTP_PORT`
 - `KRKNC_EMAIL_MAX_MESSAGE_SIZE`
@@ -270,6 +271,12 @@ KRKNC_CAMERA_NAME=dock
 JPEG の品質を 1〜100 で設定します（デフォルト: 85）。小さくするとデータ量が減り、画質が下がります。
 ```bash
 KRKNC_CAMERA_JPEG_QUALITY=85
+```
+
+### KRKNC_CAMERA_INDEX
+使うカメラの番号を設定します（Linux では `/dev/videoN` の N）。省略時は番号の小さい順に試し、最初に開けたカメラを使います。Linux の USB カメラは映像用の装置（例: `/dev/video0`）のほかに映像を取り込めない付加情報用の装置（例: `/dev/video1`）も作りますが、省略時はこれを飛ばします。カメラを複数つないでいて、どれを使うかを決めたいときに設定します。
+```bash
+KRKNC_CAMERA_INDEX=0
 ```
 
 ## Email (SMTP Server)
